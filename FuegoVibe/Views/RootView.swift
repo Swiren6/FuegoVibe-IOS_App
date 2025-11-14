@@ -13,13 +13,11 @@ struct RootView: View {
     var body: some View {
         Group {
             if authVM.user != nil {
-                // ✅ Utilisateur connecté → Afficher le contenu principal
+                //  Utilisateur connecté → Afficher le contenu principal
                 ContentView()
             } else {
-                // ✅ Pas d'utilisateur → Afficher l'écran de connexion
-                NavigationView {
-                    SignInView()
-                }
+                //  Pas d'utilisateur → Afficher la page d'accueil (Welcome Screen)
+                WelcomeView()
             }
         }
     }
