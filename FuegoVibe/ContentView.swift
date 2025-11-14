@@ -10,6 +10,7 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject var authVM: AuthViewModel  // ✅ Accès au ViewModel
     @Query private var items: [Item]
 
     var body: some View {
@@ -24,11 +25,22 @@ struct ContentView: View {
                 }
                 .onDelete(perform: deleteItems)
             }
+            .navigationTitle("FuegoVibe 🔥")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        authVM.signOut()
+                    } label: {
+                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                            .foregroundColor(.red)
+                    }
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
                 }
-                ToolbarItem {
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: addItem) {
                         Label("Add Item", systemImage: "plus")
                     }
@@ -58,4 +70,5 @@ struct ContentView: View {
 #Preview {
     ContentView()
         .modelContainer(for: Item.self, inMemory: true)
+        .environmentObject(AuthViewModel())
 }

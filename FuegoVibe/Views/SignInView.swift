@@ -16,11 +16,15 @@ struct SignInView: View {
             VStack(alignment: .leading, spacing: 15) {
 
                 TextField("Email", text: $email)
+                    .textContentType(.emailAddress)
+                    .autocapitalization(.none)
+                    .keyboardType(.emailAddress)
                     .padding()
                     .background(Color(.secondarySystemBackground))
                     .cornerRadius(10)
 
                 SecureField("Password", text: $password)
+                    .textContentType(.password)
                     .padding()
                     .background(Color(.secondarySystemBackground))
                     .cornerRadius(10)
@@ -30,6 +34,8 @@ struct SignInView: View {
                 Text(authVM.errorMessage)
                     .foregroundColor(.red)
                     .font(.caption)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
             }
 
             Button {
@@ -37,13 +43,21 @@ struct SignInView: View {
                     await authVM.signIn(email: email, password: password)
                 }
             } label: {
-                Text("Sign In")
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.purple)
-                    .cornerRadius(12)
+                HStack {
+                    if authVM.isLoading {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    } else {
+                        Text("Sign In")
+                    }
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.purple)
+                .cornerRadius(12)
             }
+            .disabled(authVM.isLoading || email.isEmpty || password.isEmpty)
 
             NavigationLink("Don't have an account? Sign Up") {
                 SignUpView()
@@ -54,5 +68,13 @@ struct SignInView: View {
             Spacer()
         }
         .padding()
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+#Preview {
+    NavigationView {
+        SignInView()
+            .environmentObject(AuthViewModel())
     }
 }
