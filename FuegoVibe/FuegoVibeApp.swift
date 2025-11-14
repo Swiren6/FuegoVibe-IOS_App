@@ -7,9 +7,22 @@
 
 import SwiftUI
 import SwiftData
+import FirebaseCore
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        FirebaseApp.configure()
+        return true
+    }
+}
 
 @main
 struct FuegoVibeApp: App {
+
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+
+    // SwiftData Model Container
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -25,7 +38,10 @@ struct FuegoVibeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            NavigationView {
+                ContentView()
+                    .environmentObject(AuthViewModel())  
+            }
         }
         .modelContainer(sharedModelContainer)
     }
