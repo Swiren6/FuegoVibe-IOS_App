@@ -12,47 +12,91 @@ import FirebaseAuth
 struct DashboardAdminView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var eventVM: EventViewModel
+    @EnvironmentObject var quoteVM: QuoteViewModel
     
     @State private var selectedTab = 0
+    @State private var showQuoteSplash = false
+    @State private var hasShownQuoteToday = false
     
     var body: some View {
-        TabView(selection: $selectedTab) {
-            // 🏠 Accueil - Liste des événements
-            AdminHomeTab()
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
-                .tag(0)
+        ZStack {
+            TabView(selection: $selectedTab) {
+                // 🏠 Accueil - Liste des événements
+                AdminHomeTab()
+                    .tabItem {
+                        Label("Home", systemImage: "house.fill")
+                    }
+                    .tag(0)
+                
+                // 📊 Dashboard Stats
+                AdminStatsTab()
+                    .tabItem {
+                        Label("Dashboard", systemImage: "chart.bar.fill")
+                    }
+                    .tag(1)
+                
+                // ➕ Créer événement
+                CreateEventTab()
+                    .tabItem {
+                        Label("Create", systemImage: "plus.circle.fill")
+                    }
+                    .tag(2)
+                
+                // 👥 Utilisateurs
+                UsersManagementTab()
+                    .tabItem {
+                        Label("Users", systemImage: "person.2.fill")
+                    }
+                    .tag(3)
+                
+                // ⚙️ Settings
+                AdminSettingsTab()
+                    .tabItem {
+                        Label("Settings", systemImage: "gearshape.fill")
+                    }
+                    .tag(4)
+            }
+            .accentColor(.purple)
             
-            // 📊 Dashboard Stats
-            AdminStatsTab()
-                .tabItem {
-                    Label("Dashboard", systemImage: "chart.bar.fill")
-                }
-                .tag(1)
-            
-            // ➕ Créer événement
-            CreateEventTab()
-                .tabItem {
-                    Label("Create", systemImage: "plus.circle.fill")
-                }
-                .tag(2)
-            
-            // 👥 Utilisateurs
-            UsersManagementTab()
-                .tabItem {
-                    Label("Users", systemImage: "person.2.fill")
-                }
-                .tag(3)
-            
-            // ⚙️ Settings
-            AdminSettingsTab()
-                .tabItem {
-                    Label("Settings", systemImage: "gearshape.fill")
-                }
-                .tag(4)
+            // Afficher le splash de citation si nécessaire
+            if showQuoteSplash, let quote = quoteVM.quoteOfTheDay {
+                QuoteSplashView(quote: quote, isPresented: $showQuoteSplash)
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
         }
-        .accentColor(.purple)
+        .onAppear {
+            // Charger la citation et afficher le splash une fois par jour
+            Task {
+                await quoteVM.loadQuoteWithCache()
+                
+                // Vérifier si on a déjà montré la citation aujourd'hui
+                let lastShownDate = UserDefaults.standard.object(forKey: "lastQuoteShownDate") as? Date
+                let calendar = Calendar.current
+                
+                if let lastDate = lastShownDate {
+                    if !calendar.isDateInToday(lastDate) {
+                        // Nouvelle journée, afficher la citation
+                        showQuoteSplashWithDelay()
+                    }
+                } else {
+                    // Première fois, afficher la citation
+                    showQuoteSplashWithDelay()
+                }
+            }
+        }
+    }
+    
+    private func showQuoteSplashWithDelay() {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            withAnimation(.easeIn(duration: 0.3)) {
+                showQuoteSplash = true
+            }
+            
+            // Marquer comme affiché aujourd'hui
+            UserDefaults.standard.set(Date(), forKey: "lastQuoteShownDate")
+        }
     }
 }
 
@@ -90,12 +134,6 @@ struct AdminHomeTab: View {
                 // Barre de recherche
                 SearchBar(text: $searchText)
                     .padding()
-                
-                // Citation du jour (version compacte pour admin)
-                if let quote = quoteVM.quoteOfTheDay {
-                    QuoteCardCompactView(quote: quote)
-                        .padding(.horizontal)
-                }
                 
                 // Filtres catégories
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -148,6 +186,19 @@ struct AdminHomeTab: View {
             .navigationTitle("Events Management")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        authVM.signOut()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                            Text("Logout")
+                                .font(.subheadline)
+                        }
+                        .foregroundColor(.red)
+                    }
+                }
+                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         Task {
@@ -171,10 +222,8 @@ struct AdminHomeTab: View {
                 Text("Are you sure you want to delete this event?")
             }
             .onAppear {
-                // ✅ Listener temps réel - mise à jour automatique
                 eventVM.startListening()
                 
-                // ✅ Charger la citation du jour
                 Task {
                     await quoteVM.loadQuoteWithCache()
                 }
@@ -800,4 +849,5 @@ struct AdminSettingsTab: View {
     DashboardAdminView()
         .environmentObject(AuthViewModel())
         .environmentObject(EventViewModel())
+        .environmentObject(QuoteViewModel())
 }

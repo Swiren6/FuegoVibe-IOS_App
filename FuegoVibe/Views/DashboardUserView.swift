@@ -9,36 +9,78 @@ import SwiftUI
 import SwiftData
 import FirebaseAuth
 
+// MARK: - Dashboard Principal
 struct DashboardUserView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var eventVM: EventViewModel
+    @EnvironmentObject var quoteVM: QuoteViewModel
     @Query private var items: [Item]
     
     @State private var selectedTab = 0
+    @State private var showQuoteSplash = false
     
     var body: some View {
-        TabView(selection: $selectedTab) {
-            // 🏠 Accueil - Liste des événements
-            HomeTabContent()
-                .tabItem {
-                    Label("Home", systemImage: "house.fill")
-                }
-                .tag(0)
+        ZStack {
+            TabView(selection: $selectedTab) {
+                // Accueil - Liste des événements
+                HomeTabContent()
+                    .tabItem {
+                        Label("Home", systemImage: "house.fill")
+                    }
+                    .tag(0)
+                
+                //  Profil
+                ProfileTabContent()
+                    .tabItem {
+                        Label("Profile", systemImage: "person.fill")
+                    }
+                    .tag(1)
+                
+                //Settings
+                SettingsTabContent()
+                    .tabItem {
+                        Label("Settings", systemImage: "gearshape.fill")
+                    }
+                    .tag(2)
+            }
             
-            // 👤 Profil
-            ProfileTabContent()
-                .tabItem {
-                    Label("Profile", systemImage: "person.fill")
+            //  Afficher le splash de citation si nécessaire
+            if showQuoteSplash, let quote = quoteVM.quoteOfTheDay {
+                QuoteSplashView(quote: quote, isPresented: $showQuoteSplash)
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
+        }
+        .onAppear {
+            // Charger la citation et afficher le splash une fois par jour
+            Task {
+                await quoteVM.loadQuoteWithCache()
+                
+          
+                let lastShownDate = UserDefaults.standard.object(forKey: "lastQuoteShownDate") as? Date
+                let calendar = Calendar.current
+                
+                if let lastDate = lastShownDate {
+                    if !calendar.isDateInToday(lastDate) {
+                        
+                        showQuoteSplashWithDelay()
+                    }
+                } else {                    showQuoteSplashWithDelay()
                 }
-                .tag(1)
+            }
+        }
+    }
+    
+    private func showQuoteSplashWithDelay() {
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            withAnimation(.easeIn(duration: 0.3)) {
+                showQuoteSplash = true
+            }
             
-            // ⚙️ Settings
-            SettingsTabContent()
-                .tabItem {
-                    Label("Settings", systemImage: "gearshape.fill")
-                }
-                .tag(2)
+            // Marquer comme affiché aujourd'hui
+            UserDefaults.standard.set(Date(), forKey: "lastQuoteShownDate")
         }
     }
 }
@@ -74,12 +116,6 @@ struct HomeTabContent: View {
                 // Barre de recherche
                 SearchBar(text: $searchText)
                     .padding()
-                
-                // Citation du jour
-                if let quote = quoteVM.quoteOfTheDay {
-                    QuoteCardView(quote: quote)
-                        .padding(.horizontal)
-                }
                 
                 // Filtres de catégories
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -141,10 +177,7 @@ struct HomeTabContent: View {
                 }
             }
             .onAppear {
-                // ✅ Listener temps réel - mise à jour automatique
                 eventVM.startListening()
-                
-                // ✅ Charger la citation du jour
                 Task {
                     await quoteVM.loadQuoteWithCache()
                 }
@@ -157,7 +190,9 @@ struct HomeTabContent: View {
     }
 }
 
-// MARK: - Barre de recherche
+// MARK: - Composants UI
+
+// Barre de recherche
 struct SearchBar: View {
     @Binding var text: String
     
@@ -182,7 +217,7 @@ struct SearchBar: View {
     }
 }
 
-// MARK: - Bouton filtre catégorie
+// Bouton filtre catégorie
 struct CategoryFilterButton: View {
     let title: String
     let isSelected: Bool
@@ -207,7 +242,7 @@ struct CategoryFilterButton: View {
     }
 }
 
-// MARK: - Carte événement
+// Carte événement
 struct EventCardView: View {
     let event: Event
     
@@ -283,7 +318,7 @@ struct EventCardView: View {
                             .background(Color.green.opacity(0.1))
                             .cornerRadius(6)
                     } else if let price = event.price {
-                        Text("$\(Int(price))")
+                        Text("DT\(Int(price))")
                             .font(.caption)
                             .fontWeight(.bold)
                             .foregroundColor(.orange)
@@ -331,7 +366,7 @@ struct EventCardView: View {
     }
 }
 
-// MARK: - Vue vide
+// Vue vide
 struct EmptyEventsView: View {
     var body: some View {
         VStack(spacing: 16) {
@@ -515,14 +550,14 @@ struct SettingsTabContent: View {
                     HStack {
                         Text("Version")
                         Spacer()
-                        Text("1.0.0")
+                        Text("1.2.0")
                             .foregroundColor(.secondary)
                     }
                     
                     HStack {
                         Text("Build")
                         Spacer()
-                        Text("001")
+                        Text("Final")
                             .foregroundColor(.secondary)
                     }
                 }
@@ -554,7 +589,9 @@ struct SettingsTabContent: View {
     }
 }
 
-// MARK: - Mes événements créés
+// MARK: - Vues Secondaires
+
+// Mes événements créés
 struct MyEventsView: View {
     @EnvironmentObject var eventVM: EventViewModel
     
@@ -574,7 +611,7 @@ struct MyEventsView: View {
     }
 }
 
-// MARK: - Événements rejoints
+// Événements rejoints
 struct JoinedEventsView: View {
     @EnvironmentObject var eventVM: EventViewModel
     
@@ -594,7 +631,7 @@ struct JoinedEventsView: View {
     }
 }
 
-// MARK: - Détail événement (placeholder)
+// Détail événement
 struct EventDetailView: View {
     let event: Event
     @EnvironmentObject var authVM: AuthViewModel
@@ -641,9 +678,11 @@ struct EventDetailView: View {
     }
 }
 
+// MARK: - Preview
 #Preview {
     DashboardUserView()
         .modelContainer(for: Item.self, inMemory: true)
         .environmentObject(AuthViewModel())
         .environmentObject(EventViewModel())
+        .environmentObject(QuoteViewModel())
 }
