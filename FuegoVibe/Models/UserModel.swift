@@ -21,7 +21,6 @@ struct AppUser: Codable, Identifiable {
     var email: String
     var role: UserRole
     var createdAt: Date
-    
     var isAdmin: Bool {
         return role == .admin
     }

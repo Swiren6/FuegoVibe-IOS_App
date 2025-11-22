@@ -21,7 +21,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct FuegoVibeApp: App {
 
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
-    @StateObject private var authViewModel = AuthViewModel()  // ✅ Création de l'instance
+    @StateObject private var authViewModel = AuthViewModel()
+    @StateObject private var eventViewModel = EventViewModel()
+    @StateObject private var quoteViewModel = QuoteViewModel()
 
     // SwiftData Model Container
     var sharedModelContainer: ModelContainer = {
@@ -40,7 +42,9 @@ struct FuegoVibeApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .environmentObject(authViewModel)  // ✅ Injection dans tout l'arbre
+                .environmentObject(authViewModel)
+                .environmentObject(eventViewModel)
+                .environmentObject(quoteViewModel)
         }
         .modelContainer(sharedModelContainer)
     }
