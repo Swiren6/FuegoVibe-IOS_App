@@ -8,7 +8,6 @@
 import Foundation
 import FirebaseFirestore
 
-// Enum pour les rôles
 enum UserRole: String, Codable {
     case user = "user"
     case admin = "admin"

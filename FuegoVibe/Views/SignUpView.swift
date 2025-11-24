@@ -54,7 +54,6 @@ struct SignUpView: View {
                 } else {
                     Task {
                         await authVM.signUp(email: email, password: password)
-                        // Si l'inscription réussit, revenir à l'écran de connexion
                         if authVM.user != nil {
                             dismiss()
                         }

@@ -12,7 +12,7 @@ import FirebaseFirestore
 
 @MainActor
 class AuthViewModel: ObservableObject {
-    //  EMAIL DE L'ADMIN UNIQUE 
+     
     private let ADMIN_EMAIL = "sirine@gmail.com"
     
     @Published var user: FirebaseAuth.User?
@@ -35,7 +35,6 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    // Récupérer les données utilisateur
     func fetchUserData(uid: String) async {
         do {
             let document = try await db.collection("users").document(uid).getDocument()
@@ -51,7 +50,6 @@ class AuthViewModel: ObservableObject {
                 
                 self.currentAppUser = appUser
             } else {
-                // Document n'existe pas, le créer
                 await createUserDocument(uid: uid, email: user?.email ?? "")
             }
         } catch {
@@ -60,9 +58,8 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    // Créer le document utilisateur
     private func createUserDocument(uid: String, email: String) async {
-        // Déterminer le rôle : admin si c'est l'email admin, sinon user
+    
         let role: UserRole = (email == ADMIN_EMAIL) ? .admin : .user
         let createdAt = Date()
         
@@ -85,7 +82,8 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    // Connexion
+    
+    
     func signIn(email: String, password: String) async {
         guard !email.isEmpty, !password.isEmpty else {
             errorMessage = "Please fill in all fields"
@@ -106,7 +104,7 @@ class AuthViewModel: ObservableObject {
         isLoading = false
     }
     
-    // Inscription (toujours user par défaut sauf si email = ADMIN_EMAIL)
+
     func signUp(email: String, password: String) async {
         guard !email.isEmpty, !password.isEmpty else {
             errorMessage = "Please fill in all fields"
@@ -127,7 +125,6 @@ class AuthViewModel: ObservableObject {
         isLoading = false
     }
     
-    // Déconnexion
     func signOut() {
         do {
             try Auth.auth().signOut()
@@ -139,7 +136,6 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    // Vérifier si admin
     var isAdmin: Bool {
         return currentAppUser?.isAdmin ?? false
     }

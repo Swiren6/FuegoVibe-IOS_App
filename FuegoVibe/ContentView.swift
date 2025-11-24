@@ -16,10 +16,8 @@ struct ContentView: View {
 
     var body: some View {
         TabView {
-            // 🏠 Page principale
             NavigationSplitView {
                 VStack {
-                    // Badge de rôle
                     if let currentUser = authVM.currentAppUser {
                         HStack {
                             Text("Welcome, \(currentUser.email)")
@@ -83,7 +81,6 @@ struct ContentView: View {
                 Label("Home", systemImage: "house.fill")
             }
             
-            // 👑 Admin (visible uniquement si admin)
             if authVM.isAdmin {
                 NavigationView {
                     AdminPanelView()
@@ -111,7 +108,6 @@ struct ContentView: View {
     }
 }
 
-// Panel Admin Simple
 struct AdminPanelView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @State private var users: [AppUser] = []
