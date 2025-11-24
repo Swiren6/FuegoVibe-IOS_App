@@ -19,7 +19,6 @@ struct WelcomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Gradient Background animé
                 AnimatedGradientBackground()
                     .ignoresSafeArea()
                 
@@ -31,11 +30,9 @@ struct WelcomeView: View {
                 VStack(spacing: 40) {
                     Spacer()
                     
-                    // Logo et Nom de l'App
                     VStack(spacing: 20) {
                         // Logo avec animations multiples
                         ZStack {
-                            // Cercles de lueur pulsante
                             ForEach(0..<3) { index in
                                 Circle()
                                     .stroke(Color.white.opacity(0.3), lineWidth: 2)
@@ -67,7 +64,7 @@ struct WelcomeView: View {
                                     .opacity(isAnimating ? 1.0 : 0.0)
                             }
                             
-                            // Icône de feu stylisée avec rotation et échelle
+                            
                             Image(systemName: "flame.fill")
                                 .resizable()
                                 .scaledToFit()
@@ -112,7 +109,6 @@ struct WelcomeView: View {
                         }
                         .opacity(isAnimating ? 1.0 : 0.0)
                         
-                        // Tagline animé
                         Text("Experience Events Like Never Before")
                             .font(.system(size: 16, weight: .medium, design: .rounded))
                             .foregroundColor(.white.opacity(0.9))

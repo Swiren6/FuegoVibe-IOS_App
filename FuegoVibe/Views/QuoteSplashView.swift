@@ -15,11 +15,10 @@ struct QuoteSplashView: View {
     @State private var scale: CGFloat = 0.8
     @State private var progress: Double = 0
     
-    private let duration: Double = 30 // 30 secondes
+    private let duration: Double = 30
     
     var body: some View {
         ZStack {
-            // Background gradient animé
             LinearGradient(
                 colors: [
                     Color.purple.opacity(0.9),

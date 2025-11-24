@@ -22,7 +22,6 @@ class EventViewModel: ObservableObject {
     private var joinedEventsListener: ListenerRegistration?
     private var myEventsListener: ListenerRegistration?
     
-    // 📥 Récupérer tous les événements publics
     func fetchAllEvents() async {
         isLoading = true
         errorMessage = ""
@@ -46,7 +45,6 @@ class EventViewModel: ObservableObject {
         isLoading = false
     }
     
-    // 📥 Récupérer les événements créés par l'utilisateur
     func fetchMyEvents(userId: String) async {
         isLoading = true
         errorMessage = ""
@@ -70,7 +68,6 @@ class EventViewModel: ObservableObject {
         isLoading = false
     }
     
-    // 📥 Récupérer les événements auxquels l'utilisateur participe
     func fetchJoinedEvents(userId: String) async {
         isLoading = true
         errorMessage = ""
@@ -94,7 +91,6 @@ class EventViewModel: ObservableObject {
         isLoading = false
     }
     
-    // ➕ Créer un événement
     func createEvent(_ event: Event) async -> Bool {
         isLoading = true
         errorMessage = ""
@@ -116,7 +112,6 @@ class EventViewModel: ObservableObject {
         }
     }
     
-    // ✏️ Mettre à jour un événement
     func updateEvent(_ event: Event) async -> Bool {
         guard let eventId = event.id else {
             errorMessage = "Invalid event ID"
@@ -146,7 +141,6 @@ class EventViewModel: ObservableObject {
         }
     }
     
-    // 🗑️ Supprimer un événement
     func deleteEvent(_ eventId: String) async -> Bool {
         isLoading = true
         errorMessage = ""
@@ -169,7 +163,6 @@ class EventViewModel: ObservableObject {
         }
     }
     
-    // 🎟️ Rejoindre un événement
     func joinEvent(_ event: Event, userId: String) async -> Bool {
         guard let eventId = event.id else {
             errorMessage = "Invalid event ID"
@@ -212,7 +205,6 @@ class EventViewModel: ObservableObject {
         }
     }
     
-    // 🚪 Quitter un événement
     func leaveEvent(_ event: Event, userId: String) async -> Bool {
         guard let eventId = event.id else {
             errorMessage = "Invalid event ID"
@@ -249,7 +241,6 @@ class EventViewModel: ObservableObject {
         }
     }
     
-    // 🔍 Rechercher des événements
     func searchEvents(query: String) -> [Event] {
         guard !query.isEmpty else { return events }
         
@@ -260,32 +251,26 @@ class EventViewModel: ObservableObject {
         }
     }
     
-    // 🏷️ Filtrer par catégorie
     func filterByCategory(_ category: EventCategory) -> [Event] {
         return events.filter { $0.category == category }
     }
     
-    // 📅 Filtrer par statut
     func filterByStatus(_ status: EventStatus) -> [Event] {
         return events.filter { $0.status == status }
     }
     
-    // 🆓 Filtrer les événements gratuits
     func getFreeEvents() -> [Event] {
         return events.filter { $0.isFree }
     }
     
-    // 🎫 Filtrer les événements payants
     func getPaidEvents() -> [Event] {
         return events.filter { !$0.isFree }
     }
     
-    // 📅 Événements à venir
     func getUpcomingEvents() -> [Event] {
         return events.filter { $0.startDate > Date() }
     }
     
-    // 🔔 Écouter les changements en temps réel
     func startListening() {
         listener = db.collection("events")
             .whereField("isPublic", isEqualTo: true)
@@ -309,13 +294,11 @@ class EventViewModel: ObservableObject {
             }
     }
     
-    // 🛑 Arrêter l'écoute
     func stopListening() {
         listener?.remove()
         listener = nil
     }
     
-    // 🔔 Écouter les événements rejoints en temps réel
     func startJoinedEventsListener(userId: String) {
         joinedEventsListener = db.collection("events")
             .whereField("participantIds", arrayContains: userId)
@@ -339,13 +322,11 @@ class EventViewModel: ObservableObject {
             }
     }
     
-    // 🛑 Arrêter l'écoute des événements rejoints
     func stopJoinedEventsListener() {
         joinedEventsListener?.remove()
         joinedEventsListener = nil
     }
     
-    // 🔔 Écouter mes événements créés en temps réel
     func startMyEventsListener(userId: String) {
         myEventsListener = db.collection("events")
             .whereField("organizerId", isEqualTo: userId)
@@ -369,13 +350,11 @@ class EventViewModel: ObservableObject {
             }
     }
     
-    // 🛑 Arrêter l'écoute de mes événements
     func stopMyEventsListener() {
         myEventsListener?.remove()
         myEventsListener = nil
     }
     
-    // ✅ Correction : deinit non isolé au MainActor
     nonisolated deinit {
         listener?.remove()
         joinedEventsListener?.remove()

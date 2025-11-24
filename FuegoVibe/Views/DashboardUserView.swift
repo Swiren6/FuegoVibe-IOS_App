@@ -23,29 +23,23 @@ struct DashboardUserView: View {
     var body: some View {
         ZStack {
             TabView(selection: $selectedTab) {
-                // Accueil - Liste des événements
+
                 HomeTabContent()
                     .tabItem {
                         Label("Home", systemImage: "house.fill")
                     }
                     .tag(0)
                 
-                //  Profil
                 ProfileTabContent()
                     .tabItem {
                         Label("Profile", systemImage: "person.fill")
                     }
                     .tag(1)
                 
-                //Settings
-                SettingsTabContent()
-                    .tabItem {
-                        Label("Settings", systemImage: "gearshape.fill")
-                    }
-                    .tag(2)
+                
             }
             
-            //  Afficher le splash de citation si nécessaire
+            //  Afficher le splash de citation
             if showQuoteSplash, let quote = quoteVM.quoteOfTheDay {
                 QuoteSplashView(quote: quote, isPresented: $showQuoteSplash)
                     .transition(.opacity)
@@ -53,36 +47,31 @@ struct DashboardUserView: View {
             }
         }
         .onAppear {
-            // Charger la citation et afficher le splash une fois par jour
+            
             Task {
+                // Charger la citation
                 await quoteVM.loadQuoteWithCache()
                 
-          
-                let lastShownDate = UserDefaults.standard.object(forKey: "lastQuoteShownDate") as? Date
-                let calendar = Calendar.current
+                // Vérifier que la citation existe
+                if quoteVM.quoteOfTheDay == nil {
+                    print("⚠️ Quote nil, utilisation du fallback")
+                    quoteVM.quoteOfTheDay = Quote.randomFallback
+                }
                 
-                if let lastDate = lastShownDate {
-                    if !calendar.isDateInToday(lastDate) {
-                        
-                        showQuoteSplashWithDelay()
+                print("✅ Citation chargée: \(quoteVM.quoteOfTheDay?.quote ?? "nil")")
+                
+                //  AFFICHER LE SPLASH (sans vérification de date)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    withAnimation(.easeIn(duration: 0.3)) {
+                        showQuoteSplash = true
                     }
-                } else {                    showQuoteSplashWithDelay()
+                    print("✨ Splash affiché")
                 }
             }
         }
     }
     
-    private func showQuoteSplashWithDelay() {
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            withAnimation(.easeIn(duration: 0.3)) {
-                showQuoteSplash = true
-            }
-            
-            // Marquer comme affiché aujourd'hui
-            UserDefaults.standard.set(Date(), forKey: "lastQuoteShownDate")
-        }
-    }
+    
 }
 
 // MARK: - Home Tab (Liste des événements)
@@ -97,12 +86,10 @@ struct HomeTabContent: View {
     var filteredEvents: [Event] {
         var events = eventVM.events
         
-        // Filtre par recherche
         if !searchText.isEmpty {
             events = eventVM.searchEvents(query: searchText)
         }
         
-        // Filtre par catégorie
         if let category = selectedCategory {
             events = events.filter { $0.category == category }
         }
@@ -113,14 +100,11 @@ struct HomeTabContent: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Barre de recherche
                 SearchBar(text: $searchText)
                     .padding()
                 
-                // Filtres de catégories
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
-                        // Bouton "All"
                         CategoryFilterButton(
                             title: "All",
                             isSelected: selectedCategory == nil,
@@ -129,7 +113,6 @@ struct HomeTabContent: View {
                             selectedCategory = nil
                         }
                         
-                        // Boutons catégories
                         ForEach(EventCategory.allCases, id: \.self) { category in
                             CategoryFilterButton(
                                 title: category.rawValue,
@@ -144,7 +127,6 @@ struct HomeTabContent: View {
                 }
                 .padding(.bottom, 8)
                 
-                // Liste des événements
                 if eventVM.isLoading {
                     ProgressView("Loading events...")
                         .frame(maxHeight: .infinity)
@@ -183,7 +165,6 @@ struct HomeTabContent: View {
                 }
             }
             .onDisappear {
-                // Arrêter le listener quand on quitte
                 eventVM.stopListening()
             }
         }
@@ -192,7 +173,6 @@ struct HomeTabContent: View {
 
 // MARK: - Composants UI
 
-// Barre de recherche
 struct SearchBar: View {
     @Binding var text: String
     
@@ -217,7 +197,6 @@ struct SearchBar: View {
     }
 }
 
-// Bouton filtre catégorie
 struct CategoryFilterButton: View {
     let title: String
     let isSelected: Bool
@@ -242,13 +221,11 @@ struct CategoryFilterButton: View {
     }
 }
 
-// Carte événement
 struct EventCardView: View {
     let event: Event
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Image placeholder ou couleur gradient
             ZStack(alignment: .topTrailing) {
                 Rectangle()
                     .fill(
@@ -261,7 +238,6 @@ struct EventCardView: View {
                     .frame(height: 150)
                     .cornerRadius(12)
                 
-                // Badge catégorie
                 HStack(spacing: 4) {
                     Image(systemName: event.category.icon)
                         .font(.caption2)
@@ -278,13 +254,11 @@ struct EventCardView: View {
             }
             
             VStack(alignment: .leading, spacing: 6) {
-                // Titre
                 Text(event.title)
                     .font(.headline)
                     .foregroundColor(.primary)
                     .lineLimit(2)
                 
-                // Localisation
                 HStack(spacing: 4) {
                     Image(systemName: "location.fill")
                         .font(.caption)
@@ -295,7 +269,6 @@ struct EventCardView: View {
                         .lineLimit(1)
                 }
                 
-                // Date
                 HStack(spacing: 4) {
                     Image(systemName: "calendar")
                         .font(.caption)
@@ -305,9 +278,7 @@ struct EventCardView: View {
                         .foregroundColor(.secondary)
                 }
                 
-                // Prix et participants
                 HStack {
-                    // Prix
                     if event.isFree {
                         Text("FREE")
                             .font(.caption)
@@ -330,7 +301,6 @@ struct EventCardView: View {
                     
                     Spacer()
                     
-                    // Participants
                     HStack(spacing: 4) {
                         Image(systemName: "person.2.fill")
                             .font(.caption2)
@@ -366,7 +336,6 @@ struct EventCardView: View {
     }
 }
 
-// Vue vide
 struct EmptyEventsView: View {
     var body: some View {
         VStack(spacing: 16) {
@@ -395,7 +364,6 @@ struct ProfileTabContent: View {
             ScrollView {
                 VStack(spacing: 20) {
                     if let currentUser = authVM.currentAppUser {
-                        // Photo de profil
                         Circle()
                             .fill(
                                 LinearGradient(
@@ -412,7 +380,6 @@ struct ProfileTabContent: View {
                             )
                             .padding(.top, 20)
                         
-                        // Informations utilisateur
                         VStack(spacing: 8) {
                             Text(currentUser.email)
                                 .font(.title3)
@@ -438,20 +405,12 @@ struct ProfileTabContent: View {
                         Divider()
                             .padding(.vertical)
                         
-                        // Mes événements
                         VStack(alignment: .leading, spacing: 12) {
                             Text("My Events")
                                 .font(.headline)
                                 .padding(.horizontal)
                             
-                            NavigationLink(destination: MyEventsView()) {
-                                ProfileActionRow(
-                                    icon: "calendar.badge.plus",
-                                    title: "Events Created",
-                                    value: "\(eventVM.myEvents.count)",
-                                    color: .purple
-                                )
-                            }
+                            
                             
                             NavigationLink(destination: JoinedEventsView()) {
                                 ProfileActionRow(
@@ -465,7 +424,6 @@ struct ProfileTabContent: View {
                         
                         Spacer()
                         
-                        // Bouton Sign Out
                         Button {
                             authVM.signOut()
                         } label: {
@@ -487,7 +445,7 @@ struct ProfileTabContent: View {
         }
         .onAppear {
             if let userId = authVM.user?.uid {
-                // ✅ Listeners temps réel pour les deux types d'événements
+              
                 eventVM.startMyEventsListener(userId: userId)
                 eventVM.startJoinedEventsListener(userId: userId)
             }
@@ -533,85 +491,10 @@ struct ProfileActionRow: View {
     }
 }
 
-// MARK: - Settings Tab
-struct SettingsTabContent: View {
-    @State private var notificationsEnabled = true
-    @State private var darkModeEnabled = false
-    
-    var body: some View {
-        NavigationView {
-            List {
-                Section("Preferences") {
-                    Toggle("Notifications", isOn: $notificationsEnabled)
-                    Toggle("Dark Mode", isOn: $darkModeEnabled)
-                }
-                
-                Section("About") {
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text("1.2.0")
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack {
-                        Text("Build")
-                        Spacer()
-                        Text("Final")
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Section("Support") {
-                    Link(destination: URL(string: "https://fuego.com/help")!) {
-                        HStack {
-                            Text("Help Center")
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    
-                    Link(destination: URL(string: "https://fuego.com/privacy")!) {
-                        HStack {
-                            Text("Privacy Policy")
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Settings")
-        }
-    }
-}
 
-// MARK: - Vues Secondaires
 
-// Mes événements créés
-struct MyEventsView: View {
-    @EnvironmentObject var eventVM: EventViewModel
-    
-    var body: some View {
-        List(eventVM.myEvents) { event in
-            NavigationLink(destination: EventDetailView(event: event)) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(event.title)
-                        .font(.headline)
-                    Text(event.formattedDate)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-        .navigationTitle("My Events")
-    }
-}
+// MARK: - Joined Events'Vue
 
-// Événements rejoints
 struct JoinedEventsView: View {
     @EnvironmentObject var eventVM: EventViewModel
     
@@ -631,7 +514,6 @@ struct JoinedEventsView: View {
     }
 }
 
-// Détail événement
 struct EventDetailView: View {
     let event: Event
     @EnvironmentObject var authVM: AuthViewModel

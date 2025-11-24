@@ -21,7 +21,7 @@ struct Quote: Codable, Identifiable {
     }
 }
 
-// Réponse de l'API (retourne un tableau)
+// Réponse de l'API 
 typealias QuotesResponse = [Quote]
 
 // Extension pour des citations par défaut en cas d'erreur

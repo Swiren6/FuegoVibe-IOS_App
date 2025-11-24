@@ -76,7 +76,7 @@ struct Event: Codable, Identifiable {
     var organizerEmail: String
     
     // Participants
-    var maxParticipants: Int?  // nil = illimité
+    var maxParticipants: Int?
     var currentParticipants: Int
     var participantIds: [String]  // Liste des UIDs des participants
     
@@ -172,9 +172,8 @@ struct Event: Codable, Identifiable {
     }
 }
 
-// Extension pour Firestore
+//  pour Firestore
 extension Event {
-    // Convertir en dictionnaire pour Firestore
     func toDictionary() -> [String: Any] {
         var dict: [String: Any] = [
             "title": title,
@@ -217,7 +216,6 @@ extension Event {
         return dict
     }
     
-    // Créer depuis un dictionnaire Firestore
     static func fromDictionary(_ dict: [String: Any], id: String) -> Event? {
         guard
             let title = dict["title"] as? String,

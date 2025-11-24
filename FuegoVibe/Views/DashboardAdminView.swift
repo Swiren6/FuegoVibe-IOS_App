@@ -21,35 +21,35 @@ struct DashboardAdminView: View {
     var body: some View {
         ZStack {
             TabView(selection: $selectedTab) {
-                // 🏠 Accueil - Liste des événements
+                // Accueil - Liste des événements
                 AdminHomeTab()
                     .tabItem {
                         Label("Home", systemImage: "house.fill")
                     }
                     .tag(0)
                 
-                // 📊 Dashboard Stats
+                //  Dashboard
                 AdminStatsTab()
                     .tabItem {
                         Label("Dashboard", systemImage: "chart.bar.fill")
                     }
                     .tag(1)
                 
-                // ➕ Créer événement
+                //  Créer événement
                 CreateEventTab()
                     .tabItem {
                         Label("Create", systemImage: "plus.circle.fill")
                     }
                     .tag(2)
                 
-                // 👥 Utilisateurs
+                //  Utilisateurs
                 UsersManagementTab()
                     .tabItem {
                         Label("Users", systemImage: "person.2.fill")
                     }
                     .tag(3)
                 
-                // ⚙️ Settings
+                //  Settings
                 AdminSettingsTab()
                     .tabItem {
                         Label("Settings", systemImage: "gearshape.fill")
@@ -58,7 +58,7 @@ struct DashboardAdminView: View {
             }
             .accentColor(.purple)
             
-            // Afficher le splash de citation si nécessaire
+            // Afficher le splash de citation
             if showQuoteSplash, let quote = quoteVM.quoteOfTheDay {
                 QuoteSplashView(quote: quote, isPresented: $showQuoteSplash)
                     .transition(.opacity)
@@ -66,41 +66,31 @@ struct DashboardAdminView: View {
             }
         }
         .onAppear {
-            // Charger la citation et afficher le splash une fois par jour
+          
             Task {
+                // Charger la citation
                 await quoteVM.loadQuoteWithCache()
                 
-                // Vérifier si on a déjà montré la citation aujourd'hui
-                let lastShownDate = UserDefaults.standard.object(forKey: "lastQuoteShownDate") as? Date
-                let calendar = Calendar.current
+                // Vérifier que la citation existe
+                if quoteVM.quoteOfTheDay == nil {
+                    print("⚠️ Quote nil, utilisation du fallback")
+                    quoteVM.quoteOfTheDay = Quote.randomFallback
+                }
                 
-                if let lastDate = lastShownDate {
-                    if !calendar.isDateInToday(lastDate) {
-                        // Nouvelle journée, afficher la citation
-                        showQuoteSplashWithDelay()
+                print("✅ Citation chargée: \(quoteVM.quoteOfTheDay?.quote ?? "nil")")
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    withAnimation(.easeIn(duration: 0.3)) {
+                        showQuoteSplash = true
                     }
-                } else {
-                    // Première fois, afficher la citation
-                    showQuoteSplashWithDelay()
+                    print("✨ Splash affiché")
                 }
             }
         }
     }
-    
-    private func showQuoteSplashWithDelay() {
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            withAnimation(.easeIn(duration: 0.3)) {
-                showQuoteSplash = true
-            }
-            
-            // Marquer comme affiché aujourd'hui
-            UserDefaults.standard.set(Date(), forKey: "lastQuoteShownDate")
-        }
-    }
 }
 
-// MARK: - Home Tab (Liste des événements)
+// MARK: - Home Tab
 struct AdminHomeTab: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var eventVM: EventViewModel
@@ -128,7 +118,7 @@ struct AdminHomeTab: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Header Admin
+
                 AdminHeaderBanner()
                 
                 // Barre de recherche
@@ -229,7 +219,7 @@ struct AdminHomeTab: View {
                 }
             }
             .onDisappear {
-                // Arrêter le listener quand on quitte
+
                 eventVM.stopListening()
             }
         }
@@ -340,7 +330,7 @@ struct AdminEventCard: View {
                         .fontWeight(.bold)
                         .foregroundColor(.green)
                 } else if let price = event.price {
-                    Text("$\(Int(price))")
+                    Text("DT\(Int(price))")
                         .font(.caption)
                         .fontWeight(.bold)
                         .foregroundColor(.orange)
@@ -362,7 +352,7 @@ struct AdminEventCard: View {
                 
                 Spacer()
                 
-                // Actions admin
+
                 HStack(spacing: 12) {
                     NavigationLink(destination: EditEventView(event: event)) {
                         Image(systemName: "pencil.circle.fill")
@@ -595,7 +585,7 @@ struct CreateEventTab: View {
                     Toggle("Free Event", isOn: $isFree)
                     
                     if !isFree {
-                        TextField("Price (USD)", text: $price)
+                        TextField("Price (DT)", text: $price)
                             .keyboardType(.decimalPad)
                     }
                 }
@@ -662,7 +652,6 @@ struct CreateEventTab: View {
         Task {
             let success = await eventVM.createEvent(event)
             if success {
-                // Le listener mettra à jour automatiquement la liste
                 showSuccessAlert = true
             }
         }
