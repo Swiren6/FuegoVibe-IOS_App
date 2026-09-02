@@ -2,7 +2,11 @@
 //  QuoteSplashView.swift
 //  FuegoVibe
 //
-//  Created by Mac on 22/11/2025.
+//  REDESIGN + BUGFIX:
+//  - Dark gradient background (fire → violet)
+//  - Clean typography, serif quote text
+//  - Task-based timer (no memory leak)
+//  - Smooth dismiss animation
 //
 
 import SwiftUI
@@ -10,196 +14,214 @@ import SwiftUI
 struct QuoteSplashView: View {
     let quote: Quote
     @Binding var isPresented: Bool
-    
-    @State private var opacity: Double = 0
-    @State private var scale: CGFloat = 0.8
+
+    @State private var contentOpacity: Double = 0
+    @State private var contentScale: CGFloat = 0.92
     @State private var progress: Double = 0
-    
+    @State private var splashTask: Task<Void, Never>?
+
     private let duration: Double = 30
-    
+
     var body: some View {
         ZStack {
+            // Background gradient
             LinearGradient(
                 colors: [
-                    Color.purple.opacity(0.9),
-                    Color.pink.opacity(0.8),
-                    Color.orange.opacity(0.7)
+                    Color(red: 0.08, green: 0.05, blue: 0.12),
+                    Color(red: 0.15, green: 0.07, blue: 0.22),
+                    Color(red: 0.07, green: 0.04, blue: 0.10)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
-            
-            // Particules flottantes en arrière-plan
+
+            // Ambient glows
+            RadialGradient(
+                colors: [FV.Colors.fire.opacity(0.20), .clear],
+                center: UnitPoint(x: 0.5, y: 0.35),
+                startRadius: 0,
+                endRadius: 280
+            )
+            .ignoresSafeArea()
+
+            RadialGradient(
+                colors: [FV.Colors.violet.opacity(0.15), .clear],
+                center: .bottomTrailing,
+                startRadius: 0,
+                endRadius: 300
+            )
+            .ignoresSafeArea()
+
+            // Floating particles
             ParticlesView()
                 .ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
                 Spacer()
-                
-                // Contenu de la citation
-                VStack(spacing: 30) {
-                    // Icône animée
+
+                // ── Quote content ──
+                VStack(spacing: 32) {
+
+                    // Quote mark
                     ZStack {
                         Circle()
-                            .fill(Color.white.opacity(0.2))
-                            .frame(width: 120, height: 120)
-                            .blur(radius: 10)
-                        
+                            .fill(FV.Colors.surface.opacity(0.6))
+                            .frame(width: 72, height: 72)
+                            .overlay(
+                                Circle()
+                                    .stroke(FV.Colors.fire.opacity(0.25), lineWidth: 1)
+                            )
+
                         Image(systemName: "quote.opening")
-                            .font(.system(size: 50, weight: .light))
-                            .foregroundColor(.white)
-                            .rotationEffect(.degrees(scale == 1.0 ? -5 : 5))
-                            .animation(.easeInOut(duration: 2).repeatForever(autoreverses: true), value: scale)
+                            .font(.system(size: 28, weight: .light))
+                            .foregroundStyle(FV.fireGradient)
                     }
-                    .scaleEffect(scale)
-                    
-                    // Texte de la citation
+
+                    // Quote text + author
                     VStack(spacing: 20) {
                         Text(quote.quote)
-                            .font(.system(size: 28, weight: .medium, design: .serif))
-                            .foregroundColor(.white)
+                            .font(.system(size: 24, weight: .medium, design: .serif))
+                            .foregroundColor(FV.Colors.primary)
                             .multilineTextAlignment(.center)
                             .lineSpacing(8)
-                            .padding(.horizontal, 30)
-                            .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 2)
-                        
-                        // Ligne décorative
-                        Rectangle()
-                            .fill(Color.white.opacity(0.5))
-                            .frame(width: 60, height: 2)
-                            .cornerRadius(1)
-                        
-                        Text("— \(quote.author)")
-                            .font(.system(size: 20, weight: .regular, design: .serif))
-                            .foregroundColor(.white.opacity(0.9))
-                            .italic()
+                            .padding(.horizontal, 32)
+
+                        VStack(spacing: 8) {
+                            Rectangle()
+                                .fill(FV.fireGradient)
+                                .frame(width: 40, height: 2)
+                                .cornerRadius(1)
+
+                            Text("— \(quote.author)")
+                                .font(.system(size: 16, weight: .regular, design: .serif))
+                                .foregroundColor(FV.Colors.secondary)
+                                .italic()
+                        }
                     }
                 }
-                .opacity(opacity)
-                .scaleEffect(scale)
-                
+                .opacity(contentOpacity)
+                .scaleEffect(contentScale)
+
                 Spacer()
-                
-                // Barre de progression
-                VStack(spacing: 12) {
-                    // Progress bar
-                    GeometryReader { geometry in
+
+                // ── Progress + skip ──
+                VStack(spacing: 16) {
+                    GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            // Background
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.white.opacity(0.2))
-                                .frame(height: 4)
-                            
-                            // Progress
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.white)
-                                .frame(width: geometry.size.width * progress, height: 4)
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(FV.Colors.surfaceHigh)
+                                .frame(height: 3)
+
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(FV.fireGradient)
+                                .frame(width: geo.size.width * progress, height: 3)
                         }
                     }
-                    .frame(height: 4)
+                    .frame(height: 3)
                     .padding(.horizontal, 40)
-                    
-                    // Bouton Skip
-                    Button(action: {
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            opacity = 0
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            isPresented = false
-                        }
-                    }) {
+
+                    Button(action: dismissSplash) {
                         Text("Skip")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white.opacity(0.8))
-                            .padding(.horizontal, 30)
+                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                            .foregroundColor(FV.Colors.secondary)
+                            .padding(.horizontal, 32)
                             .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 25)
-                                    .fill(Color.white.opacity(0.15))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 25)
-                                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                    )
+                            .background(FV.Colors.surface.opacity(0.7))
+                            .cornerRadius(20)
+                            .overlay(
+                                Capsule()
+                                    .stroke(FV.Colors.border, lineWidth: 1)
                             )
                     }
                 }
-                .padding(.bottom, 50)
+                .padding(.bottom, 56)
             }
         }
         .onAppear {
-            // Animation d'entrée
-            withAnimation(.easeOut(duration: 1.0)) {
-                opacity = 1.0
-                scale = 1.0
+            withAnimation(.easeOut(duration: 0.8)) {
+                contentOpacity = 1.0
+                contentScale = 1.0
             }
-            
-            // Timer pour la progression
-            Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-                if progress < 1.0 {
-                    progress += 0.1 / duration
-                } else {
-                    timer.invalidate()
-                    // Fermer automatiquement après 30 secondes
-                    withAnimation(.easeOut(duration: 0.5)) {
-                        opacity = 0
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        isPresented = false
-                    }
+
+            splashTask = Task {
+                let steps = Int(duration / 0.1)
+                for _ in 0..<steps {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    guard !Task.isCancelled else { return }
+                    progress = min(progress + (1.0 / Double(steps)), 1.0)
                 }
+                guard !Task.isCancelled else { return }
+                dismissSplash()
             }
+        }
+        .onDisappear {
+            splashTask?.cancel()
+            splashTask = nil
+        }
+    }
+
+    private func dismissSplash() {
+        splashTask?.cancel()
+        splashTask = nil
+        withAnimation(.easeOut(duration: 0.4)) {
+            contentOpacity = 0
+            contentScale = 0.95
+        }
+        Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            isPresented = false
         }
     }
 }
 
-// Vue pour les particules flottantes
+// MARK: - Particles View (bug-fixed, Task-based)
+
 struct ParticlesView: View {
     @State private var particles: [Particle] = []
-    
+    @State private var particleTask: Task<Void, Never>?
+
     var body: some View {
-        GeometryReader { geometry in
+        GeometryReader { geo in
             ZStack {
-                ForEach(particles) { particle in
+                ForEach(particles) { p in
                     Circle()
-                        .fill(Color.white.opacity(0.3))
-                        .frame(width: particle.size, height: particle.size)
-                        .position(particle.position)
-                        .blur(radius: 2)
+                        .fill(
+                            p.isWarm
+                                ? FV.Colors.fire.opacity(p.opacity)
+                                : FV.Colors.violet.opacity(p.opacity)
+                        )
+                        .frame(width: p.size, height: p.size)
+                        .position(p.position)
+                        .blur(radius: 1.5)
                 }
             }
             .onAppear {
-                // Créer les particules initiales
-                for _ in 0..<20 {
-                    particles.append(Particle(
-                        size: CGFloat.random(in: 3...8),
-                        position: CGPoint(
-                            x: CGFloat.random(in: 0...geometry.size.width),
-                            y: CGFloat.random(in: 0...geometry.size.height)
-                        )
-                    ))
+                for _ in 0..<24 {
+                    particles.append(Particle(size: geo.size))
                 }
-                
-                // Animer les particules
-                animateParticles(in: geometry.size)
+
+                particleTask = Task {
+                    while !Task.isCancelled {
+                        try? await Task.sleep(for: .milliseconds(50))
+                        guard !Task.isCancelled else { return }
+
+                        for i in 0..<particles.count {
+                            particles[i].position.y -= CGFloat.random(in: 0.4...1.2)
+                            particles[i].position.x += CGFloat.random(in: -0.4...0.4)
+                            if particles[i].position.y < -10 {
+                                particles[i] = Particle(
+                                    size: geo.size,
+                                    startY: geo.size.height + 10
+                                )
+                            }
+                        }
+                    }
+                }
             }
-        }
-    }
-    
-    func animateParticles(in size: CGSize) {
-        Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
-            for i in 0..<particles.count {
-                var particle = particles[i]
-                particle.position.y -= CGFloat.random(in: 0.5...1.5)
-                particle.position.x += CGFloat.random(in: -0.5...0.5)
-                
-                // Réinitialiser si sort de l'écran
-                if particle.position.y < -10 {
-                    particle.position.y = size.height + 10
-                    particle.position.x = CGFloat.random(in: 0...size.width)
-                }
-                
-                particles[i] = particle
+            .onDisappear {
+                particleTask?.cancel()
+                particleTask = nil
             }
         }
     }
@@ -209,6 +231,18 @@ struct Particle: Identifiable {
     let id = UUID()
     var size: CGFloat
     var position: CGPoint
+    var opacity: Double
+    var isWarm: Bool
+
+    init(size canvasSize: CGSize, startY: CGFloat? = nil) {
+        self.size = CGFloat.random(in: 2...6)
+        self.position = CGPoint(
+            x: CGFloat.random(in: 0...canvasSize.width),
+            y: startY ?? CGFloat.random(in: 0...canvasSize.height)
+        )
+        self.opacity = Double.random(in: 0.10...0.30)
+        self.isWarm = Bool.random()
+    }
 }
 
 #Preview {

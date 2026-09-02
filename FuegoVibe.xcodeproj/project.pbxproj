@@ -31,6 +31,8 @@
 		0429EF602EC7724500BD038D /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 0429EF5F2EC7724500BD038D /* FirebaseRemoteConfig */; };
 		0429EF622EC7724500BD038D /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 0429EF612EC7724500BD038D /* FirebaseStorage */; };
 		0429EF642EC7724500BD038D /* FirebaseStorageCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = 0429EF632EC7724500BD038D /* FirebaseStorageCombine-Community */; };
+		04B9818F304715D9003175BF /* DesignSystem.swift in Resources */ = {isa = PBXBuildFile; fileRef = 04B9818E304715D9003175BF /* DesignSystem.swift */; };
+		04B9819030471A8E003175BF /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04B9818E304715D9003175BF /* DesignSystem.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,6 +56,7 @@
 		0429EEF22EC7535C00BD038D /* FuegoVibe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FuegoVibe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0429EF012EC7536000BD038D /* FuegoVibeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FuegoVibeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0429EF0B2EC7536000BD038D /* FuegoVibeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FuegoVibeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		04B9818E304715D9003175BF /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -130,6 +133,7 @@
 				0429EF042EC7536000BD038D /* FuegoVibeTests */,
 				0429EF0E2EC7536000BD038D /* FuegoVibeUITests */,
 				0429EEF32EC7535C00BD038D /* Products */,
+				04B9818E304715D9003175BF /* DesignSystem.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -290,6 +294,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				04B9818F304715D9003175BF /* DesignSystem.swift in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -314,6 +319,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				04B9819030471A8E003175BF /* DesignSystem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
