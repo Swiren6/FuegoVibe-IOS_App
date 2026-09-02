@@ -1,3 +1,8 @@
+//
+//  SignInView.swift
+//  FuegoVibe
+//
+
 import SwiftUI
 
 struct SignInView: View {
@@ -5,70 +10,110 @@ struct SignInView: View {
 
     @State private var email = ""
     @State private var password = ""
+    @State private var formOpacity: Double = 0
+    @State private var formOffset: CGFloat = 20
 
     var body: some View {
-        VStack(spacing: 30) {
+        ZStack {
+            FV.Colors.background.ignoresSafeArea()
 
-            Text("Welcome to FuegoVibe🔥")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundColor(.purple)
+            // Subtle top glow
+            RadialGradient(
+                colors: [FV.Colors.violet.opacity(0.12), .clear],
+                center: .top, startRadius: 0, endRadius: 350
+            )
+            .ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 15) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
 
-                TextField("Email", text: $email)
-                    .textContentType(.emailAddress)
-                    .autocapitalization(.none)
-                    .keyboardType(.emailAddress)
-                    .padding()
-                    .background(Color(.secondarySystemBackground))
-                    .cornerRadius(10)
+                    // ── Header ──
+                    VStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(FV.Colors.surface)
+                                .frame(width: 72, height: 72)
+                                .overlay(
+                                    Circle()
+                                        .stroke(FV.Colors.fire.opacity(0.4), lineWidth: 1.5)
+                                )
+                                .shadow(color: FV.Colors.fire.opacity(0.3), radius: 16)
 
-                SecureField("Password", text: $password)
-                    .textContentType(.password)
-                    .padding()
-                    .background(Color(.secondarySystemBackground))
-                    .cornerRadius(10)
-            }
+                            Image(systemName: "flame.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 32, height: 32)
+                                .foregroundStyle(FV.fireGradientVertical)
+                        }
+                        .padding(.top, 20)
 
-            if !authVM.errorMessage.isEmpty {
-                Text(authVM.errorMessage)
-                    .foregroundColor(.red)
-                    .font(.caption)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-            }
+                        Text("Welcome back")
+                            .font(.system(size: 30, weight: .bold, design: .rounded))
+                            .foregroundColor(FV.Colors.primary)
 
-            Button {
-                Task {
-                    await authVM.signIn(email: email, password: password)
-                }
-            } label: {
-                HStack {
-                    if authVM.isLoading {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    } else {
-                        Text("Sign In")
+                        Text("Sign in to your account")
+                            .font(.system(size: 15))
+                            .foregroundColor(FV.Colors.secondary)
                     }
+                    .padding(.bottom, 40)
+
+                    // ── Form ──
+                    VStack(spacing: 14) {
+                        FVInputField(
+                            placeholder: "Email address",
+                            text: $email,
+                            icon: "envelope",
+                            keyboard: .emailAddress
+                        )
+
+                        FVInputField(
+                            placeholder: "Password",
+                            text: $password,
+                            isSecure: true,
+                            icon: "lock"
+                        )
+
+                        FVErrorText(message: authVM.errorMessage)
+                            .padding(.top, 2)
+
+                        FVPrimaryButton(
+                            title: "Sign In",
+                            isLoading: authVM.isLoading,
+                            isDisabled: email.isEmpty || password.isEmpty
+                        ) {
+                            Task { await authVM.signIn(email: email, password: password) }
+                        }
+                        .padding(.top, 8)
+                    }
+                    .padding(.horizontal, 28)
+                    .opacity(formOpacity)
+                    .offset(y: formOffset)
+
+                    // ── Footer ──
+                    HStack(spacing: 4) {
+                        Text("Don't have an account?")
+                            .foregroundColor(FV.Colors.secondary)
+                        NavigationLink(destination: SignUpView()) {
+                            Text("Sign Up")
+                                .foregroundStyle(FV.fireGradient)
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    .font(.system(size: 15))
+                    .padding(.top, 28)
+                    .opacity(formOpacity)
                 }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.purple)
-                .cornerRadius(12)
+                .padding(.vertical, 20)
             }
-            .disabled(authVM.isLoading || email.isEmpty || password.isEmpty)
-
-            NavigationLink("Don't have an account? Sign Up") {
-                SignUpView()
-            }
-            .font(.footnote)
-            .foregroundColor(.blue)
-
-            Spacer()
         }
-        .padding()
+        .preferredColorScheme(.dark)
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.5).delay(0.1)) {
+                formOpacity = 1
+                formOffset = 0
+            }
+        }
     }
 }
 

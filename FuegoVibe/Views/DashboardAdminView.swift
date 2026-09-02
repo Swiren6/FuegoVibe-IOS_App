@@ -2,8 +2,6 @@
 //  DashboardAdminView.swift
 //  FuegoVibe
 //
-//  Created by mac on 14/11/2025.
-//
 
 import SwiftUI
 import FirebaseFirestore
@@ -13,199 +11,195 @@ struct DashboardAdminView: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var eventVM: EventViewModel
     @EnvironmentObject var quoteVM: QuoteViewModel
-    
+
     @State private var selectedTab = 0
     @State private var showQuoteSplash = false
-    @State private var hasShownQuoteToday = false
-    
+
     var body: some View {
         ZStack {
             TabView(selection: $selectedTab) {
-                // Accueil - Liste des événements
                 AdminHomeTab()
-                    .tabItem {
-                        Label("Home", systemImage: "house.fill")
-                    }
+                    .tabItem { Label("Home", systemImage: "house.fill") }
                     .tag(0)
-                
-                //  Dashboard
+
                 AdminStatsTab()
-                    .tabItem {
-                        Label("Dashboard", systemImage: "chart.bar.fill")
-                    }
+                    .tabItem { Label("Dashboard", systemImage: "chart.bar.fill") }
                     .tag(1)
-                
-                //  Créer événement
+
                 CreateEventTab()
-                    .tabItem {
-                        Label("Create", systemImage: "plus.circle.fill")
-                    }
+                    .tabItem { Label("Create", systemImage: "plus.circle.fill") }
                     .tag(2)
-                
-                //  Utilisateurs
+
                 UsersManagementTab()
-                    .tabItem {
-                        Label("Users", systemImage: "person.2.fill")
-                    }
+                    .tabItem { Label("Users", systemImage: "person.2.fill") }
                     .tag(3)
-                
-                //  Settings
+
                 AdminSettingsTab()
-                    .tabItem {
-                        Label("Settings", systemImage: "gearshape.fill")
-                    }
+                    .tabItem { Label("Settings", systemImage: "gearshape.fill") }
                     .tag(4)
             }
-            .accentColor(.purple)
-            
-            // Afficher le splash de citation
+            .accentColor(FV.Colors.fire)
+
             if showQuoteSplash, let quote = quoteVM.quoteOfTheDay {
                 QuoteSplashView(quote: quote, isPresented: $showQuoteSplash)
                     .transition(.opacity)
                     .zIndex(1)
             }
         }
+        .darkAppearance()
+        .preferredColorScheme(.dark)
         .onAppear {
-          
             Task {
-                // Charger la citation
                 await quoteVM.loadQuoteWithCache()
-                
-                // Vérifier que la citation existe
                 if quoteVM.quoteOfTheDay == nil {
-                    print("⚠️ Quote nil, utilisation du fallback")
                     quoteVM.quoteOfTheDay = Quote.randomFallback
                 }
-                
-                print("✅ Citation chargée: \(quoteVM.quoteOfTheDay?.quote ?? "nil")")
-                
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    withAnimation(.easeIn(duration: 0.3)) {
-                        showQuoteSplash = true
-                    }
-                    print("✨ Splash affiché")
+                    withAnimation { showQuoteSplash = true }
                 }
             }
         }
     }
 }
 
-// MARK: - Home Tab
+// MARK: - Admin Home Tab
+
 struct AdminHomeTab: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var eventVM: EventViewModel
     @EnvironmentObject var quoteVM: QuoteViewModel
-    
+
     @State private var searchText = ""
     @State private var selectedCategory: EventCategory?
     @State private var showDeleteAlert = false
     @State private var eventToDelete: Event?
-    
+
     var filteredEvents: [Event] {
         var events = eventVM.events
-        
-        if !searchText.isEmpty {
-            events = eventVM.searchEvents(query: searchText)
-        }
-        
-        if let category = selectedCategory {
-            events = events.filter { $0.category == category }
-        }
-        
+        if !searchText.isEmpty { events = eventVM.searchEvents(query: searchText) }
+        if let cat = selectedCategory { events = events.filter { $0.category == cat } }
         return events
     }
-    
+
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
+            ZStack {
+                FV.Colors.background.ignoresSafeArea()
 
-                AdminHeaderBanner()
-                
-                // Barre de recherche
-                SearchBar(text: $searchText)
-                    .padding()
-                
-                // Filtres catégories
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        CategoryFilterButton(
-                            title: "All",
-                            isSelected: selectedCategory == nil,
-                            icon: "square.grid.2x2"
-                        ) {
-                            selectedCategory = nil
+                VStack(spacing: 0) {
+                    // ── Admin header ──
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "crown.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(FV.Colors.fire)
+                                Text("ADMIN")
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                    .foregroundColor(FV.Colors.fire)
+                            }
+
+                            Text(authVM.currentAppUser?.email.components(separatedBy: "@").first?.capitalized ?? "Admin")
+                                .font(.system(size: 20, weight: .bold, design: .rounded))
+                                .foregroundColor(FV.Colors.primary)
                         }
-                        
-                        ForEach(EventCategory.allCases, id: \.self) { category in
-                            CategoryFilterButton(
-                                title: category.rawValue,
-                                isSelected: selectedCategory == category,
-                                icon: category.icon
-                            ) {
-                                selectedCategory = category
+
+                        Spacer()
+
+                        Button {
+                            authVM.signOut()
+                        } label: {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 15))
+                                .foregroundColor(.red)
+                                .padding(10)
+                                .background(Color.red.opacity(0.12))
+                                .cornerRadius(12)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 16)
+                    .background(FV.Colors.background)
+
+                    // Gradient separator line
+                    Rectangle()
+                        .fill(FV.fireGradient)
+                        .frame(height: 1)
+                        .opacity(0.5)
+
+                    // ── Search ──
+                    HStack(spacing: 10) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundColor(searchText.isEmpty ? FV.Colors.tertiary : FV.Colors.fire)
+                            .font(.system(size: 15))
+
+                        TextField("Search events...", text: $searchText)
+                            .foregroundColor(FV.Colors.primary)
+                            .tint(FV.Colors.fire)
+
+                        if !searchText.isEmpty {
+                            Button { searchText = "" } label: {
+                                Image(systemName: "xmark.circle.fill").foregroundColor(FV.Colors.tertiary)
                             }
                         }
                     }
-                    .padding(.horizontal)
-                }
-                .padding(.bottom, 8)
-                
-                // Liste des événements
-                if eventVM.isLoading {
-                    ProgressView("Loading events...")
-                        .frame(maxHeight: .infinity)
-                } else if filteredEvents.isEmpty {
-                    EmptyEventsView()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            ForEach(filteredEvents) { event in
-                                AdminEventCard(
-                                    event: event,
-                                    onDelete: {
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 13)
+                    .background(FV.Colors.surface)
+                    .cornerRadius(14)
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(FV.Colors.border, lineWidth: 1))
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+
+                    // ── Category filters ──
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            CategoryChip(title: "All", icon: "square.grid.2x2", color: FV.Colors.fire,
+                                         isSelected: selectedCategory == nil) {
+                                selectedCategory = nil
+                            }
+                            ForEach(EventCategory.allCases, id: \.self) { cat in
+                                CategoryChip(title: cat.rawValue, icon: cat.icon,
+                                             color: FV.Category.color(for: cat),
+                                             isSelected: selectedCategory == cat) {
+                                    selectedCategory = cat
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    .padding(.bottom, 12)
+
+                    // ── Events list ──
+                    if eventVM.isFetchingEvents {
+                        Spacer()
+                        ProgressView().progressViewStyle(CircularProgressViewStyle(tint: FV.Colors.fire))
+                        Spacer()
+                    } else if filteredEvents.isEmpty {
+                        EmptyEventsView()
+                    } else {
+                        ScrollView(showsIndicators: false) {
+                            LazyVStack(spacing: 14) {
+                                ForEach(filteredEvents) { event in
+                                    AdminEventCard(event: event, onDelete: {
                                         eventToDelete = event
                                         showDeleteAlert = true
-                                    }
-                                )
+                                    })
+                                }
                             }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 8)
                         }
-                        .padding()
                     }
                 }
             }
-            .navigationTitle("Events Management")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        authVM.signOut()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                            Text("Logout")
-                                .font(.subheadline)
-                        }
-                        .foregroundColor(.red)
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        Task {
-                            await eventVM.fetchAllEvents()
-                        }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                }
-            }
+            .navigationBarHidden(true)
             .alert("Delete Event", isPresented: $showDeleteAlert) {
                 Button("Cancel", role: .cancel) {}
                 Button("Delete", role: .destructive) {
-                    if let event = eventToDelete, let eventId = event.id {
-                        Task {
-                            await eventVM.deleteEvent(eventId)
-                        }
+                    if let event = eventToDelete, let id = event.id {
+                        Task { await eventVM.deleteEvent(id) }
                     }
                 }
             } message: {
@@ -213,333 +207,226 @@ struct AdminHomeTab: View {
             }
             .onAppear {
                 eventVM.startListening()
-                
-                Task {
-                    await quoteVM.loadQuoteWithCache()
-                }
             }
             .onDisappear {
-
                 eventVM.stopListening()
             }
         }
     }
 }
 
-// MARK: - Admin Header Banner
-struct AdminHeaderBanner: View {
-    @EnvironmentObject var authVM: AuthViewModel
-    
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Admin Panel")
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.9))
-                
-                Text(authVM.currentAppUser?.email.components(separatedBy: "@").first ?? "Admin")
-                    .font(.headline)
-                    .foregroundColor(.white)
-            }
-            
-            Spacer()
-            
-            HStack(spacing: 6) {
-                Image(systemName: "crown.fill")
-                    .font(.title3)
-                Text("ADMIN")
-                    .font(.caption)
-                    .fontWeight(.bold)
-            }
-            .foregroundColor(.white)
-        }
-        .padding()
-        .background(
-            LinearGradient(
-                colors: [Color.purple, Color.pink],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-        )
-    }
-}
-
 // MARK: - Admin Event Card
+
 struct AdminEventCard: View {
     let event: Event
     let onDelete: () -> Void
-    @EnvironmentObject var eventVM: EventViewModel
-    
+
+    private var catColor: Color { FV.Category.color(for: event.category) }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(event.title)
-                        .font(.headline)
-                    
-                    HStack(spacing: 4) {
-                        Image(systemName: "person.fill")
-                            .font(.caption2)
+        HStack(spacing: 0) {
+            // Left accent bar
+            Rectangle()
+                .fill(catColor)
+                .frame(width: 4)
+                .cornerRadius(2, corners: [.topLeft, .bottomLeft])
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(event.title)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(FV.Colors.primary)
+
                         Text(event.organizerEmail)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(FV.Colors.tertiary)
                     }
-                }
-                
-                Spacer()
-                
-                // Badge catégorie
-                HStack(spacing: 4) {
-                    Image(systemName: event.category.icon)
-                        .font(.caption2)
-                    Text(event.category.rawValue)
-                        .font(.caption)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(getCategoryColor(event.category).opacity(0.2))
-                .foregroundColor(getCategoryColor(event.category))
-                .cornerRadius(8)
-            }
-            
-            HStack(spacing: 16) {
-                // Localisation
-                HStack(spacing: 4) {
-                    Image(systemName: "location.fill")
-                        .font(.caption)
-                    Text(event.location)
-                        .font(.caption)
-                }
-                .foregroundColor(.secondary)
-                
-                // Date
-                HStack(spacing: 4) {
-                    Image(systemName: "calendar")
-                        .font(.caption)
-                    Text(event.formattedDate)
-                        .font(.caption)
-                }
-                .foregroundColor(.secondary)
-            }
-            
-            HStack {
-                // Prix
-                if event.isFree {
-                    Text("FREE")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.green)
-                } else if let price = event.price {
-                    Text("DT\(Int(price))")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.orange)
-                }
-                
-                // Participants
-                HStack(spacing: 4) {
-                    Image(systemName: "person.2.fill")
-                        .font(.caption2)
-                    if let max = event.maxParticipants {
-                        Text("\(event.currentParticipants)/\(max)")
-                            .font(.caption)
-                    } else {
-                        Text("\(event.currentParticipants)")
-                            .font(.caption)
-                    }
-                }
-                .foregroundColor(.secondary)
-                
-                Spacer()
-                
+                    Spacer()
 
-                HStack(spacing: 12) {
-                    NavigationLink(destination: EditEventView(event: event)) {
-                        Image(systemName: "pencil.circle.fill")
-                            .font(.title3)
-                            .foregroundColor(.blue)
+                    HStack(spacing: 4) {
+                        Image(systemName: event.category.icon).font(.caption2)
+                        Text(event.category.rawValue).font(.caption)
                     }
-                    
-                    Button(action: onDelete) {
-                        Image(systemName: "trash.circle.fill")
-                            .font(.title3)
-                            .foregroundColor(.red)
+                    .foregroundColor(catColor)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(catColor.opacity(0.15))
+                    .cornerRadius(8)
+                }
+
+                HStack(spacing: 16) {
+                    Label(event.location, systemImage: "location.fill")
+                    Label(event.formattedDate, systemImage: "calendar")
+                }
+                .font(.system(size: 12))
+                .foregroundColor(FV.Colors.secondary)
+                .lineLimit(1)
+
+                HStack {
+                    if event.isFree {
+                        Text("FREE")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 7).padding(.vertical, 3)
+                            .background(Color.green.opacity(0.15))
+                            .cornerRadius(6)
+                    } else if let price = event.price {
+                        Text("DT \(Int(price))")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(catColor)
+                            .padding(.horizontal, 7).padding(.vertical, 3)
+                            .background(catColor.opacity(0.15))
+                            .cornerRadius(6)
+                    }
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.2.fill").font(.caption2)
+                        Text(event.maxParticipants != nil
+                            ? "\(event.currentParticipants)/\(event.maxParticipants!)"
+                            : "\(event.currentParticipants)")
+                            .font(.caption)
+                    }
+                    .foregroundColor(FV.Colors.secondary)
+
+                    Spacer()
+
+                    HStack(spacing: 10) {
+                        NavigationLink(destination: EditEventView(event: event)) {
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.system(size: 22))
+                                .foregroundColor(FV.Category.technology)
+                        }
+                        Button(action: onDelete) {
+                            Image(systemName: "trash.circle.fill")
+                                .font(.system(size: 22))
+                                .foregroundColor(.red.opacity(0.8))
+                        }
                     }
                 }
             }
+            .padding(14)
         }
-        .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
-    }
-    
-    func getCategoryColor(_ category: EventCategory) -> Color {
-        switch category {
-        case .music: return .purple
-        case .sports: return .green
-        case .arts: return .pink
-        case .food: return .orange
-        case .business: return .blue
-        case .technology: return .indigo
-        case .other: return .gray
-        }
+        .background(FV.Colors.surface)
+        .cornerRadius(14)
+        .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
     }
 }
 
 // MARK: - Stats Tab
+
 struct AdminStatsTab: View {
     @EnvironmentObject var eventVM: EventViewModel
-    @State private var totalUsers = 0
-    @State private var totalAdmins = 0
-    @State private var users: [AppUser] = []
-    
-    private let db = Firestore.firestore()
-    
+    @EnvironmentObject var userVM: UserViewModel
+
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Stats Cards
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                        StatCard(
-                            icon: "calendar.badge.plus",
-                            title: "Total Events",
-                            value: "\(eventVM.events.count)",
-                            color: .purple
-                        )
-                        
-                        StatCard(
-                            icon: "person.3.fill",
-                            title: "Total Users",
-                            value: "\(totalUsers)",
-                            color: .blue
-                        )
-                        
-                        StatCard(
-                            icon: "crown.fill",
-                            title: "Admins",
-                            value: "\(totalAdmins)",
-                            color: .orange
-                        )
-                        
-                        StatCard(
-                            icon: "calendar",
-                            title: "Upcoming",
-                            value: "\(eventVM.getUpcomingEvents().count)",
-                            color: .green
-                        )
-                    }
-                    .padding()
-                    
-                    // Recent Users
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Recent Users")
-                            .font(.headline)
-                            .padding(.horizontal)
-                        
-                        ForEach(users.prefix(5)) { user in
-                            HStack {
-                                Circle()
-                                    .fill(user.isAdmin ? Color.purple : Color.blue)
-                                    .frame(width: 40, height: 40)
-                                    .overlay(
-                                        Text(String(user.email.prefix(1)).uppercased())
-                                            .foregroundColor(.white)
-                                            .font(.headline)
-                                    )
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(user.email)
-                                        .font(.subheadline)
-                                    Text(user.createdAt.formatted(date: .abbreviated, time: .omitted))
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                
-                                Spacer()
-                                
-                                if user.isAdmin {
-                                    Image(systemName: "crown.fill")
-                                        .foregroundColor(.purple)
-                                }
-                            }
-                            .padding()
-                            .background(Color(.systemGray6))
-                            .cornerRadius(10)
+            ZStack {
+                FV.Colors.background.ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 20) {
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
+                            DarkStatCard(icon: "calendar.badge.plus", title: "Total Events",
+                                         value: "\(eventVM.events.count)", color: FV.Colors.fire)
+                            DarkStatCard(icon: "person.3.fill", title: "Total Users",
+                                         value: "\(userVM.totalUsers)", color: FV.Category.business)
+                            DarkStatCard(icon: "crown.fill", title: "Admins",
+                                         value: "\(userVM.totalAdmins)", color: FV.Category.food)
+                            DarkStatCard(icon: "calendar", title: "Upcoming",
+                                         value: "\(eventVM.getUpcomingEvents().count)", color: FV.Category.sports)
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, 20)
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Recent Users")
+                                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                .foregroundColor(FV.Colors.primary)
+                                .padding(.horizontal, 20)
+
+                            ForEach(userVM.recentUsers) { user in
+                                HStack(spacing: 14) {
+                                    Circle()
+                                        .fill(user.isAdmin ? AnyShapeStyle(FV.fireGradient) : AnyShapeStyle(FV.Colors.surfaceHigh))
+                                        .frame(width: 42, height: 42)
+                                        .overlay(
+                                            Text(String(user.email.prefix(1)).uppercased())
+                                                .font(.system(size: 16, weight: .bold))
+                                                .foregroundColor(user.isAdmin ? .white : FV.Colors.secondary)
+                                        )
+
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(user.email)
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(FV.Colors.primary)
+                                        Text(user.createdAt.formatted(date: .abbreviated, time: .omitted))
+                                            .font(.caption)
+                                            .foregroundColor(FV.Colors.tertiary)
+                                    }
+
+                                    Spacer()
+
+                                    if user.isAdmin {
+                                        Image(systemName: "crown.fill")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(FV.Colors.fire)
+                                    }
+                                }
+                                .padding(14)
+                                .background(FV.Colors.surface)
+                                .cornerRadius(14)
+                                .padding(.horizontal, 20)
+                            }
+                        }
                     }
+                    .padding(.vertical, 20)
                 }
             }
             .navigationTitle("Dashboard")
             .onAppear {
-                Task {
-                    await loadStats()
-                }
+                Task { await userVM.fetchAllUsers() }
             }
-        }
-    }
-    
-    func loadStats() async {
-        do {
-            let snapshot = try await db.collection("users").getDocuments()
-            
-            let allUsers = snapshot.documents.compactMap { doc -> AppUser? in
-                let data = doc.data()
-                guard let uid = data["uid"] as? String,
-                      let email = data["email"] as? String else { return nil }
-                
-                let roleString = data["role"] as? String ?? "user"
-                let role = UserRole(rawValue: roleString) ?? .user
-                let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
-                
-                var user = AppUser(uid: uid, email: email, role: role, createdAt: createdAt)
-                user.id = uid
-                return user
-            }
-            
-            totalUsers = allUsers.count
-            totalAdmins = allUsers.filter { $0.isAdmin }.count
-            users = allUsers.sorted { $0.createdAt > $1.createdAt }
-            
-        } catch {
-            print("❌ Error loading stats: \(error)")
         }
     }
 }
 
-struct StatCard: View {
+struct DarkStatCard: View {
     let icon: String
     let title: String
     let value: String
     let color: Color
-    
+
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Image(systemName: icon)
-                .font(.system(size: 30))
+                .font(.system(size: 22))
                 .foregroundColor(color)
-            
-            Text(value)
-                .font(.system(size: 28, weight: .bold))
-            
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .padding(10)
+                .background(color.opacity(0.15))
+                .cornerRadius(10)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(value)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundColor(FV.Colors.primary)
+                Text(title)
+                    .font(.system(size: 12))
+                    .foregroundColor(FV.Colors.secondary)
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(color.opacity(0.1))
-        .cornerRadius(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(FV.Colors.surface)
+        .cornerRadius(16)
     }
 }
 
 // MARK: - Create Event Tab
+
 struct CreateEventTab: View {
     @EnvironmentObject var authVM: AuthViewModel
     @EnvironmentObject var eventVM: EventViewModel
-    @Environment(\.dismiss) var dismiss
-    
+
     @State private var title = ""
     @State private var description = ""
     @State private var selectedCategory: EventCategory = .music
@@ -550,284 +437,283 @@ struct CreateEventTab: View {
     @State private var price = ""
     @State private var maxParticipants = ""
     @State private var isPublic = true
-    
     @State private var showSuccessAlert = false
-    
+
     var body: some View {
         NavigationView {
-            Form {
-                Section("Event Details") {
-                    TextField("Title", text: $title)
-                    TextField("Description", text: $description, axis: .vertical)
-                        .lineLimit(3...6)
-                    
-                    Picker("Category", selection: $selectedCategory) {
-                        ForEach(EventCategory.allCases, id: \.self) { category in
+            ZStack {
+                FV.Colors.background.ignoresSafeArea()
+
+                Form {
+                    Section("Event Details") {
+                        TextField("Title", text: $title)
+                        TextField("Description", text: $description, axis: .vertical).lineLimit(3...6)
+                        Picker("Category", selection: $selectedCategory) {
+                            ForEach(EventCategory.allCases, id: \.self) { cat in
+                                Label(cat.rawValue, systemImage: cat.icon).tag(cat)
+                            }
+                        }
+                    }
+                    Section("Date & Time") {
+                        DatePicker("Start", selection: $startDate, displayedComponents: [.date, .hourAndMinute])
+                        DatePicker("End", selection: $endDate, displayedComponents: [.date, .hourAndMinute])
+                    }
+                    Section("Location") {
+                        TextField("Location", text: $location)
+                    }
+                    Section("Pricing") {
+                        Toggle("Free Event", isOn: $isFree)
+                        if !isFree {
+                            TextField("Price (DT)", text: $price).keyboardType(.decimalPad)
+                        }
+                    }
+                    Section("Capacity") {
+                        TextField("Max Participants (optional)", text: $maxParticipants).keyboardType(.numberPad)
+                    }
+                    Section("Visibility") {
+                        Toggle("Public Event", isOn: $isPublic)
+                    }
+                    Section {
+                        Button(action: createEvent) {
                             HStack {
-                                Image(systemName: category.icon)
-                                Text(category.rawValue)
+                                Spacer()
+                                if eventVM.isCreating {
+                                    ProgressView()
+                                } else {
+                                    Text("Create Event").fontWeight(.semibold)
+                                }
+                                Spacer()
                             }
-                            .tag(category)
                         }
+                        .disabled(!isFormValid || eventVM.isCreating)
                     }
                 }
-                
-                Section("Date & Time") {
-                    DatePicker("Start Date", selection: $startDate, displayedComponents: [.date, .hourAndMinute])
-                    DatePicker("End Date", selection: $endDate, displayedComponents: [.date, .hourAndMinute])
-                }
-                
-                Section("Location") {
-                    TextField("Location", text: $location)
-                }
-                
-                Section("Pricing") {
-                    Toggle("Free Event", isOn: $isFree)
-                    
-                    if !isFree {
-                        TextField("Price (DT)", text: $price)
-                            .keyboardType(.decimalPad)
-                    }
-                }
-                
-                Section("Capacity") {
-                    TextField("Max Participants (optional)", text: $maxParticipants)
-                        .keyboardType(.numberPad)
-                }
-                
-                Section("Visibility") {
-                    Toggle("Public Event", isOn: $isPublic)
-                }
-                
-                Section {
-                    Button(action: createEvent) {
-                        HStack {
-                            Spacer()
-                            if eventVM.isLoading {
-                                ProgressView()
-                            } else {
-                                Text("Create Event")
-                                    .fontWeight(.semibold)
-                            }
-                            Spacer()
-                        }
-                    }
-                    .disabled(!isFormValid || eventVM.isLoading)
-                }
+                .scrollContentBackground(.hidden)
             }
             .navigationTitle("Create Event")
             .navigationBarTitleDisplayMode(.inline)
             .alert("Success", isPresented: $showSuccessAlert) {
-                Button("OK") {
-                    clearForm()
-                }
-            } message: {
-                Text("Event created successfully!")
-            }
+                Button("OK") { clearForm() }
+            } message: { Text("Event created successfully!") }
         }
     }
-    
-    var isFormValid: Bool {
-        !title.isEmpty && !description.isEmpty && !location.isEmpty
-    }
-    
+
+    var isFormValid: Bool { !title.isEmpty && !description.isEmpty && !location.isEmpty }
+
     func createEvent() {
         guard let user = authVM.user else { return }
-        
-        let event = Event(
-            title: title,
-            description: description,
-            category: selectedCategory,
-            startDate: startDate,
-            endDate: endDate,
-            location: location,
-            organizerId: user.uid,
-            organizerEmail: user.email ?? "",
-            maxParticipants: Int(maxParticipants),
-            isFree: isFree,
-            price: isFree ? nil : Double(price),
-            isPublic: isPublic
-        )
-        
+        let event = Event(title: title, description: description, category: selectedCategory,
+                          startDate: startDate, endDate: endDate, location: location,
+                          organizerId: user.uid, organizerEmail: user.email ?? "",
+                          maxParticipants: Int(maxParticipants), isFree: isFree,
+                          price: isFree ? nil : Double(price), isPublic: isPublic)
         Task {
             let success = await eventVM.createEvent(event)
-            if success {
-                showSuccessAlert = true
-            }
+            if success { showSuccessAlert = true }
         }
     }
-    
+
     func clearForm() {
-        title = ""
-        description = ""
-        location = ""
-        price = ""
-        maxParticipants = ""
-        startDate = Date()
-        endDate = Date().addingTimeInterval(3600)
-        isFree = true
-        isPublic = true
+        title = ""; description = ""; location = ""; price = ""; maxParticipants = ""
+        startDate = Date(); endDate = Date().addingTimeInterval(3600); isFree = true; isPublic = true
     }
 }
 
-// MARK: - Edit Event View
+// MARK: - Edit Event
+
 struct EditEventView: View {
     let event: Event
     @EnvironmentObject var eventVM: EventViewModel
     @Environment(\.dismiss) var dismiss
-    
+
     @State private var title = ""
     @State private var description = ""
     @State private var location = ""
-    
+    @State private var startDate = Date()
+    @State private var endDate = Date()
+    @State private var isFree = true
+    @State private var price = ""
+    @State private var isPublic = true
+
     var body: some View {
         Form {
             Section("Details") {
                 TextField("Title", text: $title)
-                TextField("Description", text: $description)
+                TextField("Description", text: $description, axis: .vertical).lineLimit(3...6)
                 TextField("Location", text: $location)
             }
-            
+            Section("Date & Time") {
+                DatePicker("Start", selection: $startDate, displayedComponents: [.date, .hourAndMinute])
+                DatePicker("End", selection: $endDate, displayedComponents: [.date, .hourAndMinute])
+            }
+            Section("Pricing") {
+                Toggle("Free Event", isOn: $isFree)
+                if !isFree { TextField("Price (DT)", text: $price).keyboardType(.decimalPad) }
+            }
+            Section("Visibility") { Toggle("Public Event", isOn: $isPublic) }
             Section {
                 Button("Save Changes") {
-                    var updatedEvent = event
-                    updatedEvent.title = title
-                    updatedEvent.description = description
-                    updatedEvent.location = location
-                    
+                    var e = event
+                    e.title = title; e.description = description; e.location = location
+                    e.startDate = startDate; e.endDate = endDate
+                    e.isFree = isFree; e.price = isFree ? nil : Double(price); e.isPublic = isPublic
                     Task {
-                        let success = await eventVM.updateEvent(updatedEvent)
-                        if success {
-                            dismiss()
-                        }
+                        let ok = await eventVM.updateEvent(e)
+                        if ok { dismiss() }
                     }
                 }
             }
         }
         .navigationTitle("Edit Event")
         .onAppear {
-            title = event.title
-            description = event.description
-            location = event.location
+            title = event.title; description = event.description; location = event.location
+            startDate = event.startDate; endDate = event.endDate
+            isFree = event.isFree; price = event.price.map { String($0) } ?? ""; isPublic = event.isPublic
         }
     }
 }
 
 // MARK: - Users Management Tab
+
 struct UsersManagementTab: View {
-    @State private var users: [AppUser] = []
-    @State private var isLoading = false
-    private let db = Firestore.firestore()
-    
+    @EnvironmentObject var userVM: UserViewModel
+
     var body: some View {
         NavigationView {
-            List(users) { user in
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(user.email)
-                            .font(.headline)
-                        Text("Joined: \(user.createdAt.formatted(date: .abbreviated, time: .omitted))")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Spacer()
-                    
-                    if user.isAdmin {
-                        HStack(spacing: 4) {
-                            Image(systemName: "crown.fill")
-                            Text("Admin")
-                        }
-                        .font(.caption)
-                        .foregroundColor(.purple)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.purple.opacity(0.1))
-                        .cornerRadius(8)
+            ZStack {
+                FV.Colors.background.ignoresSafeArea()
+                userListContent
+            }
+            .navigationTitle("Users")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button { Task { await userVM.fetchAllUsers() } } label: {
+                        Image(systemName: "arrow.clockwise")
                     }
                 }
             }
-            .navigationTitle("Users")
-            .onAppear {
-                Task { await loadUsers() }
-            }
+            .onAppear { Task { await userVM.fetchAllUsers() } }
         }
     }
-    
-    func loadUsers() async {
-        isLoading = true
-        
-        do {
-            let snapshot = try await db.collection("users").getDocuments()
-            
-            self.users = snapshot.documents.compactMap { doc -> AppUser? in
-                let data = doc.data()
-                guard let uid = data["uid"] as? String,
-                      let email = data["email"] as? String else { return nil }
-                
-                let roleString = data["role"] as? String ?? "user"
-                let role = UserRole(rawValue: roleString) ?? .user
-                let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
-                
-                var user = AppUser(uid: uid, email: email, role: role, createdAt: createdAt)
-                user.id = uid
-                return user
+
+    // Extracted to help the compiler type-check
+    @ViewBuilder
+    private var userListContent: some View {
+        if userVM.isLoading {
+            ProgressView()
+                .progressViewStyle(CircularProgressViewStyle(tint: FV.Colors.fire))
+        } else {
+            ScrollView(showsIndicators: false) {
+                LazyVStack(spacing: 10) {
+                    ForEach(userVM.users) { user in
+                        UserListRow(user: user)
+                    }
+                }
+                .padding(20)
             }
-        } catch {
-            print("❌ Error loading users: \(error)")
         }
-        
-        isLoading = false
     }
 }
 
-// MARK: - Admin Settings Tab
+// Extracted row — fixes "unable to type-check in reasonable time" error
+struct UserListRow: View {
+    let user: AppUser
+
+    var body: some View {
+        HStack(spacing: 14) {
+            // Avatar
+            let fill: AnyShapeStyle = user.isAdmin
+                ? AnyShapeStyle(FV.fireGradient)
+                : AnyShapeStyle(FV.Colors.surfaceHigh)
+
+            Circle()
+                .fill(fill)
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Text(String(user.email.prefix(1)).uppercased())
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(user.isAdmin ? .white : FV.Colors.secondary)
+                )
+
+            // Info
+            VStack(alignment: .leading, spacing: 3) {
+                Text(user.email)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(FV.Colors.primary)
+                Text("Joined: \(user.createdAt.formatted(date: .abbreviated, time: .omitted))")
+                    .font(.caption)
+                    .foregroundColor(FV.Colors.tertiary)
+            }
+
+            Spacer()
+
+            // Admin badge
+            if user.isAdmin {
+                HStack(spacing: 4) {
+                    Image(systemName: "crown.fill").font(.caption2)
+                    Text("Admin").font(.caption)
+                }
+                .foregroundColor(FV.Colors.fire)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(FV.Colors.fire.opacity(0.15))
+                .cornerRadius(8)
+            }
+        }
+        .padding(14)
+        .background(FV.Colors.surface)
+        .cornerRadius(14)
+    }
+}
+
+// MARK: - Settings Tab
+
 struct AdminSettingsTab: View {
     @EnvironmentObject var authVM: AuthViewModel
-    
+
     var body: some View {
         NavigationView {
-            List {
-                Section("Account") {
-                    if let user = authVM.currentAppUser {
-                        HStack {
-                            Text("Email")
-                            Spacer()
-                            Text(user.email)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        HStack {
-                            Text("Role")
-                            Spacer()
-                            HStack(spacing: 4) {
-                                Image(systemName: "crown.fill")
-                                Text("Admin")
+            ZStack {
+                FV.Colors.background.ignoresSafeArea()
+
+                List {
+                    Section("Account") {
+                        if let user = authVM.currentAppUser {
+                            HStack {
+                                Text("Email").foregroundColor(FV.Colors.secondary)
+                                Spacer()
+                                Text(user.email).foregroundColor(FV.Colors.tertiary).font(.system(size: 14))
                             }
-                            .foregroundColor(.purple)
+                            HStack {
+                                Text("Role").foregroundColor(FV.Colors.secondary)
+                                Spacer()
+                                HStack(spacing: 4) {
+                                    Image(systemName: "crown.fill").font(.caption)
+                                    Text("Admin").font(.system(size: 14))
+                                }
+                                .foregroundColor(FV.Colors.fire)
+                            }
                         }
                     }
-                }
-                
-                Section("App Info") {
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text("1.0.0")
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Section {
-                    Button(role: .destructive) {
-                        authVM.signOut()
-                    } label: {
+                    Section("App Info") {
                         HStack {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                            Text("Sign Out")
+                            Text("Version").foregroundColor(FV.Colors.secondary)
+                            Spacer()
+                            Text("1.0.0").foregroundColor(FV.Colors.tertiary)
+                        }
+                    }
+                    Section {
+                        Button(role: .destructive) {
+                            authVM.signOut()
+                        } label: {
+                            HStack {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                Text("Sign Out")
+                            }
                         }
                     }
                 }
+                .scrollContentBackground(.hidden)
             }
             .navigationTitle("Settings")
         }
@@ -839,4 +725,5 @@ struct AdminSettingsTab: View {
         .environmentObject(AuthViewModel())
         .environmentObject(EventViewModel())
         .environmentObject(QuoteViewModel())
+        .environmentObject(UserViewModel())
 }

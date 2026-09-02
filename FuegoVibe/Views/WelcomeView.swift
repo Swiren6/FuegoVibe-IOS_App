@@ -1,272 +1,230 @@
-
-
 //
 //  WelcomeView.swift
 //  FuegoVibe
-//
-//  Created by mac on 14/11/2025.
 //
 
 import SwiftUI
 
 struct WelcomeView: View {
-    @State private var isAnimating = false
-    @State private var rotationAngle: Double = 0
-    @State private var pulseScale: CGFloat = 1.0
-    @State private var glowOpacity: Double = 0.3
-    @State private var sparkleRotation: Double = 0
-    
+    @State private var glowScale: CGFloat = 1.0
+    @State private var flameScale: CGFloat = 0.85
+    @State private var logoOpacity: Double = 0
+    @State private var titleOpacity: Double = 0
+    @State private var buttonsOffset: CGFloat = 40
+    @State private var buttonsOpacity: Double = 0
+    @State private var shimmerOffset: CGFloat = -200
+
     var body: some View {
         NavigationStack {
             ZStack {
-                AnimatedGradientBackground()
-                    .ignoresSafeArea()
-                
-                // Wave Pattern Overlay
-                WavePatternView()
-                    .opacity(0.3)
-                    .ignoresSafeArea()
-                
-                VStack(spacing: 40) {
+                // Background
+                FV.Colors.background.ignoresSafeArea()
+
+                // Ambient fire glow behind logo
+                RadialGradient(
+                    colors: [
+                        FV.Colors.fire.opacity(0.18),
+                        FV.Colors.violet.opacity(0.08),
+                        .clear
+                    ],
+                    center: UnitPoint(x: 0.5, y: 0.38),
+                    startRadius: 0,
+                    endRadius: 300
+                )
+                .scaleEffect(glowScale)
+                .ignoresSafeArea()
+
+                VStack(spacing: 0) {
                     Spacer()
-                    
-                    VStack(spacing: 20) {
-                        // Logo avec animations multiples
-                        ZStack {
-                            ForEach(0..<3) { index in
-                                Circle()
-                                    .stroke(Color.white.opacity(0.3), lineWidth: 2)
-                                    .frame(width: 140 + CGFloat(index * 30), height: 140 + CGFloat(index * 30))
-                                    .scaleEffect(pulseScale)
-                                    .opacity(glowOpacity)
-                                    .animation(
-                                        .easeInOut(duration: 2.0)
-                                        .repeatForever(autoreverses: true)
-                                        .delay(Double(index) * 0.3),
-                                        value: pulseScale
-                                    )
-                            }
-                            
-                            // Fond blanc avec ombre
-                            RoundedRectangle(cornerRadius: 30)
-                                .fill(Color.white)
-                                .frame(width: 140, height: 140)
-                                .shadow(color: .purple.opacity(0.5), radius: 20, x: 0, y: 10)
-                                .shadow(color: .pink.opacity(0.3), radius: 30, x: 0, y: 15)
-                            
-                            // Particules scintillantes autour du logo
-                            ForEach(0..<8) { index in
-                                Circle()
-                                    .fill(Color.yellow.opacity(0.8))
-                                    .frame(width: 4, height: 4)
-                                    .offset(x: cos(sparkleRotation + Double(index) * .pi / 4) * 80,
-                                           y: sin(sparkleRotation + Double(index) * .pi / 4) * 80)
-                                    .opacity(isAnimating ? 1.0 : 0.0)
-                            }
-                            
-                            
-                            Image(systemName: "flame.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 80, height: 80)
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [
-                                            Color(red: 0.9, green: 0.3, blue: 0.9),
-                                            Color(red: 1.0, green: 0.5, blue: 0.3),
-                                            Color(red: 0.6, green: 0.4, blue: 1.0)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
+
+                    // ── Logo ──
+                    ZStack {
+                        // Outer rings
+                        ForEach(0..<3) { i in
+                            Circle()
+                                .stroke(
+                                    FV.Colors.fire.opacity(0.07 - Double(i) * 0.02),
+                                    lineWidth: 1.5
                                 )
-                                .rotationEffect(.degrees(rotationAngle))
-                                .scaleEffect(pulseScale)
-                                .shadow(color: .orange.opacity(0.6), radius: 10)
+                                .frame(
+                                    width: 160 + CGFloat(i * 45),
+                                    height: 160 + CGFloat(i * 45)
+                                )
+                                .scaleEffect(glowScale)
                         }
-                        .scaleEffect(isAnimating ? 1.0 : 0.8)
-                        
-                        // Nom de l'app avec effet de brillance
+
+                        // Logo circle
+                        Circle()
+                            .fill(FV.Colors.surface)
+                            .frame(width: 132, height: 132)
+                            .overlay(
+                                Circle()
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [FV.Colors.fire.opacity(0.5), FV.Colors.violet.opacity(0.3)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.5
+                                    )
+                            )
+                            .shadow(color: FV.Colors.fire.opacity(0.4), radius: 30, x: 0, y: 0)
+
+                        // Flame icon
+                        Image(systemName: "flame.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 58, height: 58)
+                            .foregroundStyle(FV.fireGradientVertical)
+                            .shadow(color: FV.Colors.fire.opacity(0.9), radius: 18)
+                            .scaleEffect(flameScale)
+                    }
+                    .opacity(logoOpacity)
+
+                    Spacer().frame(height: 48)
+
+                    // ── Title block ──
+                    VStack(spacing: 14) {
+                        // App name with shimmer gradient
                         ZStack {
-                            // Ombre du texte
                             Text("FuegoVibe")
-                                .font(.system(size: 48, weight: .bold, design: .rounded))
-                                .foregroundColor(.black.opacity(0.3))
-                                .blur(radius: 3)
-                                .offset(y: 2)
-                            
-                            // Texte principal avec gradient
+                                .font(.system(size: 50, weight: .bold, design: .rounded))
+                                .foregroundStyle(FV.fireGradient)
+
+                            // Shimmer overlay
                             Text("FuegoVibe")
-                                .font(.system(size: 48, weight: .bold, design: .rounded))
-                                .foregroundStyle(
+                                .font(.system(size: 50, weight: .bold, design: .rounded))
+                                .foregroundColor(.clear)
+                                .overlay(
                                     LinearGradient(
-                                        colors: [.white, Color.yellow.opacity(0.9), .white],
+                                        colors: [.clear, .white.opacity(0.25), .clear],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
+                                    .offset(x: shimmerOffset)
+                                    .frame(width: 300)
                                 )
-                                .shadow(color: .white.opacity(0.5), radius: 10, x: 0, y: 0)
+                                .mask(
+                                    Text("FuegoVibe")
+                                        .font(.system(size: 50, weight: .bold, design: .rounded))
+                                )
                         }
-                        .opacity(isAnimating ? 1.0 : 0.0)
-                        
+
                         Text("Experience Events Like Never Before")
-                            .font(.system(size: 16, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.9))
-                            .opacity(isAnimating ? 1.0 : 0.0)
-                            .animation(.easeIn(duration: 1.0).delay(0.5), value: isAnimating)
+                            .font(.system(size: 16, weight: .regular, design: .rounded))
+                            .foregroundColor(FV.Colors.secondary)
+                            .multilineTextAlignment(.center)
                     }
-                    
+                    .opacity(titleOpacity)
+
                     Spacer()
-                    
-                    // Boutons
-                    VStack(spacing: 20) {
-                        // Get Started Button avec effet de hover
+
+                    // ── Feature pills ──
+                    HStack(spacing: 12) {
+                        FeaturePill(icon: "music.note", label: "Music")
+                        FeaturePill(icon: "sportscourt", label: "Sports")
+                        FeaturePill(icon: "paintpalette", label: "Arts")
+                        FeaturePill(icon: "fork.knife", label: "Food")
+                    }
+                    .opacity(titleOpacity)
+
+                    Spacer().frame(height: 48)
+
+                    // ── CTA Buttons ──
+                    VStack(spacing: 14) {
                         NavigationLink(destination: SignUpView()) {
                             HStack {
                                 Text("Get Started")
-                                    .font(.system(size: 20, weight: .semibold))
-                                
+                                    .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                    .foregroundColor(.white)
                                 Image(systemName: "arrow.right")
-                                    .font(.system(size: 18, weight: .semibold))
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.white)
                             }
-                            .foregroundColor(Color(red: 0.7, green: 0.5, blue: 1.0))
                             .frame(maxWidth: .infinity)
-                            .frame(height: 60)
-                            .background(
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 30)
-                                        .fill(Color.white)
-                                        .shadow(color: .purple.opacity(0.4), radius: 15, x: 0, y: 5)
-                                    
-                                    // Effet de brillance
-                                    RoundedRectangle(cornerRadius: 30)
-                                        .stroke(
-                                            LinearGradient(
-                                                colors: [.clear, .white.opacity(0.5), .clear],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ),
-                                            lineWidth: 2
-                                        )
-                                }
-                            )
+                            .frame(height: 58)
+                            .background(FV.fireGradient)
+                            .cornerRadius(18)
+                            .shadow(color: FV.Colors.fire.opacity(0.4), radius: 16, x: 0, y: 8)
                         }
-                        .padding(.horizontal, 40)
-                        .scaleEffect(isAnimating ? 1.0 : 0.9)
-                        .opacity(isAnimating ? 1.0 : 0.0)
-                        .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.3), value: isAnimating)
-                        
-                        // Already have an account
+                        .buttonStyle(PlainButtonStyle())
+
                         NavigationLink(destination: SignInView()) {
-                            HStack(spacing: 4) {
-                                Text("I already have an account")
-                                    .font(.system(size: 16, weight: .medium))
-                                
-                                Image(systemName: "arrow.right.circle.fill")
-                                    .font(.system(size: 14))
-                            }
-                            .foregroundColor(.white.opacity(0.9))
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(
-                                Capsule()
-                                    .fill(Color.white.opacity(0.15))
-                                    .overlay(
-                                        Capsule()
-                                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
+                            Text("I already have an account")
+                                .font(.system(size: 16, weight: .medium, design: .rounded))
+                                .foregroundColor(FV.Colors.secondary)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .background(FV.Colors.surface)
+                                .cornerRadius(16)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(FV.Colors.border, lineWidth: 1)
+                                )
                         }
-                        .opacity(isAnimating ? 1.0 : 0.0)
-                        .animation(.easeIn(duration: 0.8).delay(0.5), value: isAnimating)
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .padding(.bottom, 60)
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 52)
+                    .offset(y: buttonsOffset)
+                    .opacity(buttonsOpacity)
                 }
             }
+            .preferredColorScheme(.dark)
             .onAppear {
-                // Démarrer toutes les animations
-                withAnimation(.easeOut(duration: 0.8)) {
-                    isAnimating = true
+                // Logo entrance
+                withAnimation(.easeOut(duration: 0.7).delay(0.1)) {
+                    logoOpacity = 1
+                    flameScale = 1.0
                 }
-                
-                // Animation continue de la rotation
-                withAnimation(.linear(duration: 8.0).repeatForever(autoreverses: false)) {
-                    rotationAngle = 360
+                // Title entrance
+                withAnimation(.easeOut(duration: 0.7).delay(0.35)) {
+                    titleOpacity = 1
                 }
-                
-                // Animation continue du pulse
-                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                    pulseScale = 1.1
-                    glowOpacity = 0.6
+                // Buttons slide up
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.75).delay(0.55)) {
+                    buttonsOffset = 0
+                    buttonsOpacity = 1
                 }
-                
-                // Animation continue des particules scintillantes
-                withAnimation(.linear(duration: 10.0).repeatForever(autoreverses: false)) {
-                    sparkleRotation = 2 * .pi
+                // Glow pulse loop
+                withAnimation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true)) {
+                    glowScale = 1.18
+                }
+                // Flame pulse loop
+                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(0.5)) {
+                    flameScale = 1.06
+                }
+                // Shimmer sweep
+                withAnimation(.linear(duration: 2.0).delay(1.0).repeatForever(autoreverses: false)) {
+                    shimmerOffset = 300
                 }
             }
         }
     }
 }
 
-// MARK: - Gradient Animé
-struct AnimatedGradientBackground: View {
-    @State private var animateGradient = false
-    
+struct FeaturePill: View {
+    let icon: String
+    let label: String
+
     var body: some View {
-        LinearGradient(
-            gradient: Gradient(colors: [
-                Color(red: 0.9, green: 0.3, blue: 0.9), // Rose/Magenta
-                Color(red: 0.6, green: 0.4, blue: 1.0), // Violet
-                Color(red: 1.0, green: 0.5, blue: 0.3)  // Orange
-            ]),
-            startPoint: animateGradient ? .topLeading : .bottomLeading,
-            endPoint: animateGradient ? .bottomTrailing : .topTrailing
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 11))
+            Text(label)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+        }
+        .foregroundColor(FV.Colors.secondary)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(FV.Colors.surface)
+        .cornerRadius(20)
+        .overlay(
+            Capsule().stroke(FV.Colors.border, lineWidth: 1)
         )
-        .onAppear {
-            withAnimation(.linear(duration: 5.0).repeatForever(autoreverses: true)) {
-                animateGradient.toggle()
-            }
-        }
     }
 }
 
-// MARK: - Vagues Animées
-struct WavePatternView: View {
-    @State private var waveOffset: CGFloat = 0
-    
-    var body: some View {
-        GeometryReader { geometry in
-            Path { path in
-                let width = geometry.size.width
-                let height = geometry.size.height
-                let waveHeight: CGFloat = 15
-                let wavelength: CGFloat = 40
-                
-                // Dessiner plusieurs lignes de vagues
-                for line in 0..<Int(height / 20) {
-                    let yOffset = CGFloat(line) * 20
-                    
-                    path.move(to: CGPoint(x: 0, y: yOffset))
-                    
-                    for x in stride(from: 0, through: width, by: 5) {
-                        let relativeX = (x + waveOffset) / wavelength
-                        let sine = sin(relativeX) * waveHeight
-                        path.addLine(to: CGPoint(x: x, y: yOffset + sine))
-                    }
-                }
-            }
-            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-        }
-        .onAppear {
-            withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
-                waveOffset = 40
-            }
-        }
-    }
-}
-
-// MARK: - Preview
 #Preview {
     WelcomeView()
 }
